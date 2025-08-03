@@ -1,4 +1,5 @@
 <template>
+  <h1>hello</h1>
   <div class="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-[#1a2a6c] via-[#b21f1f] to-[#fdbb2d] p-4 relative overflow-hidden">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.05)_0%,transparent_30%),radial-gradient(circle_at_80%_70%,rgba(255,255,255,0.05)_0%,transparent_30%)]"></div>
     <el-card class="w-full max-w-md rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.2)] overflow-hidden relative z-10 bg-white/96 backdrop-blur-sm transition-all duration-400 hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
