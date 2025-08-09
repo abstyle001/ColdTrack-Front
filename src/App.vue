@@ -2,7 +2,9 @@
 </script>
 
 <template>
-  <router-view></router-view>
+  <UApp>
+    <router-view></router-view>
+  </UApp>
 </template>
 
 <style scoped>
