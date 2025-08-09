@@ -1,6 +1,6 @@
 import { token } from "../hooks/useStorage";
 import request from "../utils/request";
-import type { User } from "../utils/types";
+import type { TokenClaim, User } from "../utils/types";
 
 async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
   const [_, data] = await request<User[]>("/user/page", "GET", {
@@ -13,4 +13,18 @@ async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
   return data;
 }
 
-export { fetchUserPageRequest };
+async function getTokenClaimRequest() {
+  const [_, data] = await request<TokenClaim>("/account/me", "GET", {
+    token: token.value,
+  });
+  return data;
+}
+
+async function getUserInfoRequest(id: string) {
+  const [_, data] = await request<User>(`/user/${id}`, "GET", {
+    token: token.value,
+  });
+  return data;
+}
+
+export { fetchUserPageRequest, getUserInfoRequest, getTokenClaimRequest };

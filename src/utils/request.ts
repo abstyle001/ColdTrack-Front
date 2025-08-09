@@ -45,7 +45,6 @@ async function request<T>(
         });
         ultimaUrl += '?' + params.toString();
       }
-      console.log('ultimaUrl', ultimaUrl);
       response = await axios.get(ultimaUrl, {
         method: "GET",
         headers,

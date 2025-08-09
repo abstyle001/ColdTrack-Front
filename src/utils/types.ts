@@ -51,4 +51,11 @@ interface Task {
   updatedAt: string;
 }
 
-export type { User, Department, Position, Task };
+interface TokenClaim {
+  id: string;
+  email: string;
+  userName: string;
+  role: string;
+}
+
+export type { User, Department, Position, Task, TokenClaim };
