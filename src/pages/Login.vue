@@ -97,7 +97,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   loginStatus.value = true;
   loading.value = false;
   setTimeout(() => {
-    router.push('/');
+    router.replace('/');
   }, 2000);
 }
 </script>

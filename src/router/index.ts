@@ -17,6 +17,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("../pages/Home.vue"),
       },
       {
+        path: "/person",
+        name: "person",
+        component: () => import("../pages/Person.vue"),
+      },
+      {
         path: "/department",
         name: "department",
         component: () => import("../pages/Department.vue"),
@@ -30,6 +35,16 @@ const routes: Array<RouteRecordRaw> = [
         path: "/task",
         name: "task",
         component: () => import("../pages/Task.vue"),
+      },
+      {
+        path: "/me",
+        name: "me",
+        component: () => import("../pages/Me.vue"),
+      },
+      {
+        path: "/settings",
+        name: "settings",
+        component: () => import("../pages/Settings.vue"),
       },
     ],
   },

@@ -3,10 +3,15 @@ import { ref, computed, onMounted } from 'vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
 import { getTokenClaimRequest, getUserInfoRequest } from '../api/userApi';
+import { loginStatus, token } from '../hooks/useStorage';
+import router from '../router';
+import { useUserStore } from '../store';
 
 defineProps<{
   collapsed?: boolean
 }>()
+
+const userStore = useUserStore();
 
 const colorMode = useColorMode();
 const appConfig = useAppConfig();
@@ -20,7 +25,7 @@ const user = ref({
     src: '',
     alt: ''
   }
-})
+});
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
@@ -28,7 +33,8 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   avatar: user.value.avatar
 }], [{
   label: '个人信息',
-  icon: 'i-lucide-user'
+  icon: 'i-lucide-user',
+  to: '/me'
 }, {
   label: '设置',
   icon: 'i-lucide-settings',
@@ -111,7 +117,13 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   target: '_blank'
 }], [{
   label: '退出登录',
-  icon: 'i-lucide-log-out'
+  icon: 'i-lucide-log-out',
+  onSelect: (e) => {
+    e.preventDefault();
+    token.value = '';
+    loginStatus.value = false;
+    router.replace('/login');
+  }
 }]]))
 
 // 获取用户信息
@@ -125,6 +137,7 @@ async function getUserInfo(id: string) {
         alt: data.nickName
       }
     }
+    userStore.updateUser(data);
   }
 }
 

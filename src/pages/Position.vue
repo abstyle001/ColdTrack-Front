@@ -2,7 +2,9 @@
 </script>
 
 <template>
-  <h1>Position Page</h1>
+  <DashboardPanel title="职位">
+    Position
+  </DashboardPanel>
 </template>
 
 <style scoped>

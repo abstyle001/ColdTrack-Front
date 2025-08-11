@@ -2,7 +2,9 @@
 </script>
 
 <template>
-  <h1>Task Page</h1>
+  <DashboardPanel title="任务">
+    Task
+  </DashboardPanel>
 </template>
 
 <style scoped>

@@ -1,128 +1,60 @@
 <script setup lang="ts">
-import { h, onMounted, ref, resolveComponent } from 'vue';
-import type { User } from '../utils/types';
-import request from '../utils/request';
-import { token } from '../hooks/useStorage';
-import { fetchUserPageRequest } from '../api/userApi';
-import type { TableColumn } from '@nuxt/ui';
+import { ref } from 'vue';
 
-const page = ref<number>(1);
-const userList = ref<User[]>([]);
-// 用户总数量
-const userCount = ref<number>(0);
-// 每页显示条目个数，默认为10
-const pageSize = ref<number>(10);
-
-const UIcon = resolveComponent('UIcon');
-const UAvatar = resolveComponent('UAvatar');
-
-const columns: TableColumn<User>[] = [
+const cards = ref([
   {
-    accessorKey: 'avatar',
-    header: '头像',
-    cell: ({ row }) => {
-      return h('div', { class: 'flex items-center gap-3' }, [
-        h(UAvatar, {
-          src: row.original.avatar,
-          size: 'lg'
-        }),
-        h('div', undefined, [
-          h('p', { class: 'font-medium text-highlighted' }, row.original.nickName),
-          h('p', { class: '' }, `@${row.original.nickName}`)
-        ])
-      ])
-    }
+    title: '人员',
+    description: '人员列表，筛选、过滤、查询、操作，展示团队成员信息。',
+    icon: 'i-material-symbols:person',
+    to: '/person'
   },
   {
-    accessorKey: 'userName',
-    header: '用户名',
+    title: '职位',
+    description: '职位列表，从属部门，职责描述，任职要求，职位创建。',
+    icon: 'i-material-symbols:work',
+    to: '/position'
   },
   {
-    accessorKey: 'email',
-    header: '邮箱',
+    title: '部门',
+    description: '部门树状图，层级关系，部门职责，部门管理。',
+    icon: 'i-material-symbols:local-fire-department-rounded',
+    to: '/department'
   },
   {
-    accessorKey: 'phone',
-    header: '手机',
+    title: '任务',
+    description: '任务列表，任务分配，任务进度，任务状态管理。',
+    icon: 'i-material-symbols:task',
+    to: '/task'
   },
   {
-    accessorKey: 'city',
-    header: '城市',
+    title: '个人信息',
+    description: '查看和编辑个人信息，修改密码，个人设置。',
+    icon: 'i-material-symbols:account-circle',
+    to: '/me'
   },
   {
-    accessorKey: 'createdAt',
-    header: '创建时间',
-    cell: ({ row }) => {
-      return h('div', { class: 'flex items-center space-x-2' }, [h(UIcon, { class: 'size-5', name: 'i-meteor-icons:alarm-clock' }), h('span', row.getValue('createdAt'))]);
-    }
-  },
-]
-
-// 获取用户总数量
-async function fetchUserCount() {
-  const [err, data] = await request<number>('/user/count', 'GET', {
-    token: token.value
-  });
-  if (!err && data) {
-    userCount.value = data;
+    title: '设置',
+    description: '全局设置，主题配置，系统配置，用户管理。',
+    icon: 'i-material-symbols:settings',
+    to: '/settings'
   }
-}
-
-// 更新页码
-function updatePage(newPage: number) {
-  fetchUserListPage(newPage);
-}
-
-// 根据页码获取用户列表，不传入默认为1
-async function fetchUserListPage(number: number = 1) {
-  const data = await fetchUserPageRequest(number, pageSize.value);
-  if (data) {
-    userList.value = data;
-  }
-}
-
-onMounted(async () => {
-  fetchUserCount();
-  fetchUserListPage();
-});
+])
 </script>
 
 <template>
-  <UDashboardPanel id="home">
-    <template #header>
-      <UDashboardNavbar title="人员" :ui="{ right: 'gap-3' }">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-      </UDashboardNavbar>
-    </template>
-    <template #body>
-      <div class="flex flex-wrap items-center justify-between gap-1.5">
-        <UInput
-          class="max-w-sm"
-          icon="i-lucide-search"
-          placeholder="Filter emails..."
-        />
-        <div class="flex flex-wrap items-center gap-1.5">
-        </div>
-      </div>
-      <UTable :data="userList" :columns="columns" class="flex-1" />
-      <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
-        <div class="text-sm text-muted">
-        </div>
-
-        <div class="flex items-center gap-1.5">
-          <UPagination
-            v-model:page="page"
-            :total="userCount"
-            show-edges
-            size="lg"
-            @update:page="updatePage"
-          />
-        </div>
-      </div>
-    </template>
-  </UDashboardPanel>
+  <DashboardPanel title="首页">
+    <UPageCard title="ColdTrack"
+      description="ColdTrack 是一个为团队和企业提供人员管理、职位管理、部门管理和任务管理的综合解决方案。助力团队高效协作，提升工作效率，打造团队协作的高校生产力平台。"
+      icon="i-material-icon-theme:3d" orientation="horizontal" spotlight spotlight-color="neutral">
+      <h1
+        class="text-5xl font-light font-mono italic skew-x-6 bg-gradient-to-r from-white/80 via-blue-300 to-white/80 bg-clip-text text-transparent drop-shadow-lg backdrop-blur-sm opacity-90 tracking-widest">
+        ColdTrack
+      </h1>
+    </UPageCard>
+    <UPageGrid>
+      <UPageCard v-for="(card, index) in cards" :key="index" v-bind="card" spotlight />
+    </UPageGrid>
+  </DashboardPanel>
 </template>
 
 <style scoped></style>
