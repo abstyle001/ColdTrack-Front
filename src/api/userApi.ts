@@ -27,4 +27,12 @@ async function getUserInfoRequest(id: string) {
   return data;
 }
 
-export { fetchUserPageRequest, getUserInfoRequest, getTokenClaimRequest };
+async function deleteUserBatchRequest(ids: string[]) {
+  const [err, _] = await request<void>("/user/batch", "DELETE", {
+    token: token.value,
+    body: ids,
+  });
+  return err;
+}
+
+export { fetchUserPageRequest, getUserInfoRequest, getTokenClaimRequest, deleteUserBatchRequest };
