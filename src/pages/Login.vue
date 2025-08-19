@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import request from '../utils/request';
-import { loginStatus, token } from '../hooks/useStorage';
+import { loginStatus, token } from '../utils/useStorage';
 import { useRouter } from 'vue-router';
 import * as z from 'zod';
 import type { FormSubmitEvent } from '@nuxt/ui'

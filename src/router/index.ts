@@ -3,7 +3,7 @@ import {
   createWebHashHistory,
   type RouteRecordRaw,
 } from "vue-router";
-import { loginStatus } from "../hooks/useStorage";
+import { loginStatus } from "../utils/useStorage";
 
 const routes: Array<RouteRecordRaw> = [
   {

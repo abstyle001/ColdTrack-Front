@@ -1,6 +1,5 @@
 import axios, {
   AxiosError,
-  type AxiosInstance,
   type AxiosResponse,
 } from "axios";
 import { Status } from "./types";

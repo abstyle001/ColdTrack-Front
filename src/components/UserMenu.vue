@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
 import { getTokenClaimRequest, getUserInfoRequest } from '../api/userApi';
-import { loginStatus, token } from '../hooks/useStorage';
+import { loginStatus, token } from '../utils/useStorage';
 import router from '../router';
 import { useUserStore } from '../store';
 

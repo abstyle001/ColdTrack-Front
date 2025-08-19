@@ -1,4 +1,4 @@
-import { token } from "../hooks/useStorage";
+import { token } from "../utils/useStorage";
 import request from "../utils/request";
 import type { TokenClaim, User } from "../utils/types";
 
