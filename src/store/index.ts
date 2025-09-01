@@ -13,9 +13,12 @@ export const useUserStore = defineStore("user", () => {
     createdAt: "",
     avatar: "",
   });
-
+  const avatarVersion = ref(0);
   const updateUser = (newUser: User) => {
     user.value = { ...user.value, ...newUser };
   };
-  return { user, updateUser };
+  const incrementAvatarVersion = () => {
+    avatarVersion.value++;
+  }
+  return { user, updateUser, avatarVersion, incrementAvatarVersion };
 });

@@ -35,4 +35,25 @@ async function deleteUserBatchRequest(ids: string[]) {
   return err;
 }
 
-export { fetchUserPageRequest, getUserInfoRequest, getTokenClaimRequest, deleteUserBatchRequest };
+async function updateUserRequest(user: User, avatar: File | null) {
+  const formData = new FormData();
+  formData.append("nickName", user.nickName);
+  formData.append("city", user.city ?? '');
+  formData.append("phone", user.phone ?? '');
+  if (avatar) {
+    formData.append("file", avatar);
+  }
+  const [err, data] = await request<User>(`/user/${user.id}`, "PUT", {
+    token: token.value,
+    body: formData,
+  });
+  return { err, data };
+}
+
+export {
+  fetchUserPageRequest,
+  getUserInfoRequest,
+  getTokenClaimRequest,
+  deleteUserBatchRequest,
+  updateUserRequest,
+};

@@ -19,13 +19,13 @@ const appConfig = useAppConfig();
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const user = ref({
-  name: 'Anonymous',
+const user = computed(() => ({
+  name: userStore.user.nickName,
   avatar: {
-    src: '',
-    alt: ''
+    src: userStore.user.avatar + '?v=' + userStore.avatarVersion,
+    alt: userStore.user.nickName
   }
-});
+}));
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
@@ -130,13 +130,13 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
 async function getUserInfo(id: string) {
   const data = await getUserInfoRequest(id);
   if (data) {
-    user.value = {
-      name: data.nickName,
-      avatar: {
-        src: data.avatar,
-        alt: data.nickName
-      }
-    }
+    // user.value = {
+    //   name: data.nickName,
+    //   avatar: {
+    //     src: data.avatar + '?v=' + userStore.avatarVersion,
+    //     alt: data.nickName
+    //   }
+    // }
     userStore.updateUser(data);
   }
 }
