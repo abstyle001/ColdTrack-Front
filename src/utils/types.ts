@@ -10,19 +10,36 @@ export const Status = {
 interface Department {
   id: string;
   name: string;
-  description: string;
+  parentId: string;
+  level: number;
+  explain: string;
+  managerId: string;
+  managerName?: string;
+  workspace: string;
+  addition?: string;
   createdAt: string;
-  updatedAt: string;
+  children?: Department[];
+}
+
+interface DepartmentTree extends Department {
+  children: DepartmentTree[];
 }
 
 interface Position {
-  id: string;
+  id: number;
   name: string;
-  description: string;
-  departmentId: string;
-  department?: Department;
+  duty: string;
+  workspace: string;
+  addition?: string;
   createdAt: string;
-  updatedAt: string;
+}
+
+interface UserPositionView {
+  positionId: number;
+  positionName: string;
+  positionDuty?: string;
+  departmentId?: string;
+  departmentName?: string;
 }
 
 interface User {
@@ -58,4 +75,4 @@ interface TokenClaim {
   role: string;
 }
 
-export type { User, Department, Position, Task, TokenClaim };
+export type { User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim };

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { h, ref, resolveComponent, useTemplateRef } from 'vue';
-import type { User } from '../utils/types';
+import { h, ref, resolveComponent, useTemplateRef, watch } from 'vue';
+import type { User, UserPositionView } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { usePerson } from '../logic/usePerson';
+import { fetchUserPositionsRequest } from '../api/userApi';
 
 // 人员表格ref
 const table = useTemplateRef("table");
@@ -16,6 +17,35 @@ const {
   filter,
   deleteBatch
 } = usePerson(table);
+
+// 每个用户的职位/部门聚合
+const positionsMap = ref<Record<string, UserPositionView[]>>({});
+const positionsSig = ref("");
+
+watch(
+  () => userList.value,
+  async (list) => {
+    const ids = list.map((u) => u.id).join(",");
+    if (ids === positionsSig.value) return;
+    positionsSig.value = ids;
+    const map: Record<string, UserPositionView[]> = {};
+    await Promise.all(
+      list.map(async (u) => {
+        const data = await fetchUserPositionsRequest(u.id);
+        map[u.id] = data ?? [];
+      })
+    );
+    positionsMap.value = map;
+  },
+  { immediate: true }
+);
+
+function positionText(views?: UserPositionView[]): string {
+  if (!views || views.length === 0) return "—";
+  return views
+    .map((v) => `${v.positionName}${v.departmentName ? `（${v.departmentName}）` : ""}`)
+    .join("、");
+}
 
 const page = ref<number>(1);
 
@@ -73,6 +103,12 @@ const columns: TableColumn<User>[] = [
   {
     accessorKey: 'city',
     header: '城市',
+  },
+  {
+    id: 'positions',
+    header: '职位 / 部门',
+    cell: ({ row }) =>
+      h('span', { class: 'text-muted' }, positionText(positionsMap.value[row.original.id])),
   },
   {
     accessorKey: 'createdAt',
