@@ -49,6 +49,23 @@ async function deleteUserBatchRequest(ids: string[]) {
   return err;
 }
 
+async function createUserRequest(user: Partial<User> & { email: string; password: string }, avatar: File | null) {
+  const formData = new FormData();
+  formData.append("email", user.email);
+  formData.append("password", user.password);
+  formData.append("nickName", user.nickName ?? '');
+  formData.append("city", user.city ?? '');
+  formData.append("phone", user.phone ?? '');
+  if (avatar) {
+    formData.append("file", avatar);
+  }
+  const [err, data] = await request<User>("/account/register", "POST", {
+    token: token.value,
+    body: formData,
+  });
+  return { err, data };
+}
+
 async function updateUserRequest(user: User, avatar: File | null) {
   const formData = new FormData();
   formData.append("nickName", user.nickName);
@@ -249,6 +266,7 @@ export {
   getUserInfoRequest,
   getTokenClaimRequest,
   deleteUserBatchRequest,
+  createUserRequest,
   updateUserRequest,
   fetchDepartmentListRequest,
   fetchDepartmentTreeRequest,
