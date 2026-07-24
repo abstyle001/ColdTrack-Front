@@ -14,11 +14,32 @@ export const useUserStore = defineStore("user", () => {
     avatar: "",
   });
   const avatarVersion = ref(0);
+  const permissions = ref<string[]>([]);
+  const roles = ref<string[]>([]);
+
   const updateUser = (newUser: User) => {
     user.value = { ...user.value, ...newUser };
   };
   const incrementAvatarVersion = () => {
     avatarVersion.value++;
-  }
-  return { user, updateUser, avatarVersion, incrementAvatarVersion };
+  };
+  const setPermissions = (perms: string[], roleList: string[]) => {
+    permissions.value = perms ?? [];
+    roles.value = roleList ?? [];
+  };
+  const hasPermission = (key: string) => permissions.value.includes(key);
+  const hasRole = (role: string) => roles.value.includes(role);
+  const isAdmin = () => roles.value.includes("Admin");
+  return {
+    user,
+    avatarVersion,
+    permissions,
+    roles,
+    updateUser,
+    incrementAvatarVersion,
+    setPermissions,
+    hasPermission,
+    hasRole,
+    isAdmin,
+  };
 });

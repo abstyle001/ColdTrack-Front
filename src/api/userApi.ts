@@ -7,6 +7,8 @@ import type {
   DepartmentTree,
   Position,
   UserPositionView,
+  Permission,
+  Role,
 } from "../utils/types";
 
 async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
@@ -142,6 +144,25 @@ async function deleteDepartmentRequest(id: string) {
   return err;
 }
 
+// ============ 部门分页 ============
+async function fetchDepartmentPageRequest(pageNumber: number, pageSize: number) {
+  const [err, data] = await request<Department[]>("/department/page", "GET", {
+    token: token.value,
+    body: {
+      number: pageNumber,
+      size: pageSize,
+    },
+  });
+  return err ? null : data;
+}
+
+async function fetchDepartmentCountRequest() {
+  const [err, data] = await request<number>("/department/count", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
 // ============ 职位 Position ============
 async function fetchPositionListRequest() {
   const [err, data] = await request<Position[]>("/position", "GET", {
@@ -188,6 +209,25 @@ async function deletePositionRequest(id: number) {
     token: token.value,
   });
   return err;
+}
+
+// ============ 职位分页 ============
+async function fetchPositionPageRequest(pageNumber: number, pageSize: number) {
+  const [err, data] = await request<Position[]>("/position/page", "GET", {
+    token: token.value,
+    body: {
+      number: pageNumber,
+      size: pageSize,
+    },
+  });
+  return err ? null : data;
+}
+
+async function fetchPositionCountRequest() {
+  const [err, data] = await request<number>("/position/count", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
 }
 
 // ============ 职位归属部门 PositionDepartment ============
@@ -260,6 +300,65 @@ async function fetchUsersByPositionRequest(positionId: number) {
   return err ? null : data;
 }
 
+// ============ 角色与权限管理 ============
+async function fetchPermissionsCatalogRequest() {
+  const [err, data] = await request<Permission[]>("/role/permissions", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function fetchRolesRequest() {
+  const [err, data] = await request<Role[]>("/role", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function createRoleRequest(name: string) {
+  const [err, data] = await request<Role>("/role", "POST", {
+    token: token.value,
+    body: { name },
+  });
+  return { err, data };
+}
+
+async function updateRolePermissionsRequest(roleId: string, permissionKeys: string[]) {
+  const [err, _] = await request<void>(`/role/${roleId}/permissions`, "PUT", {
+    token: token.value,
+    body: { permissionKeys },
+  });
+  return err;
+}
+
+async function addUserToRoleRequest(roleId: string, userId: string) {
+  const [err, _] = await request<void>(`/role/${roleId}/users/${userId}`, "POST", {
+    token: token.value,
+  });
+  return err;
+}
+
+async function removeUserFromRoleRequest(roleId: string, userId: string) {
+  const [err, _] = await request<void>(`/role/${roleId}/users/${userId}`, "DELETE", {
+    token: token.value,
+  });
+  return err;
+}
+
+async function fetchRoleUsersRequest(roleId: string) {
+  const [err, data] = await request<User[]>(`/role/${roleId}/users`, "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function fetchUserRolesRequest(userId: string) {
+  const [err, data] = await request<Role[]>(`/role/user/${userId}/roles`, "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
 export {
   fetchUserPageRequest,
   fetchUserListRequest,
@@ -274,11 +373,15 @@ export {
   createDepartmentRequest,
   updateDepartmentRequest,
   deleteDepartmentRequest,
+  fetchDepartmentPageRequest,
+  fetchDepartmentCountRequest,
   fetchPositionListRequest,
   getPositionRequest,
   createPositionRequest,
   updatePositionRequest,
   deletePositionRequest,
+  fetchPositionPageRequest,
+  fetchPositionCountRequest,
   assignPositionDepartmentRequest,
   removePositionDepartmentRequest,
   fetchPositionsByDepartmentRequest,
@@ -287,4 +390,12 @@ export {
   removeUserPositionRequest,
   fetchUserPositionsRequest,
   fetchUsersByPositionRequest,
+  fetchPermissionsCatalogRequest,
+  fetchRolesRequest,
+  createRoleRequest,
+  updateRolePermissionsRequest,
+  addUserToRoleRequest,
+  removeUserFromRoleRequest,
+  fetchRoleUsersRequest,
+  fetchUserRolesRequest,
 };

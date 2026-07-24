@@ -1,7 +1,8 @@
 import { onMounted, ref } from "vue";
 import type { Position } from "../utils/types";
 import {
-  fetchPositionListRequest,
+  fetchPositionPageRequest,
+  fetchPositionCountRequest,
   createPositionRequest,
   updatePositionRequest,
   deletePositionRequest,
@@ -10,13 +11,21 @@ import {
 export function usePosition() {
   const positionList = ref<Position[]>([]);
   const loading = ref(true);
+  const page = ref(1);
+  const pageSize = ref(10);
+  const positionCount = ref(0);
 
   const toast = useToast();
 
-  async function fetchPositions() {
+  async function fetchPositions(pageNumber: number = 1) {
     loading.value = true;
-    const data = await fetchPositionListRequest();
-    if (data) positionList.value = data;
+    const [pageData, countData] = await Promise.all([
+      fetchPositionPageRequest(pageNumber, pageSize.value),
+      fetchPositionCountRequest(),
+    ]);
+    if (pageData) positionList.value = pageData;
+    if (countData !== null) positionCount.value = countData;
+    page.value = pageNumber;
     loading.value = false;
   }
 
@@ -37,7 +46,7 @@ export function usePosition() {
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
-    await fetchPositions();
+    await fetchPositions(page.value);
     return data;
   }
 
@@ -58,7 +67,7 @@ export function usePosition() {
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
-    await fetchPositions();
+    await fetchPositions(page.value);
     return data;
   }
 
@@ -79,7 +88,7 @@ export function usePosition() {
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
-    await fetchPositions();
+    await fetchPositions(page.value);
     return true;
   }
 
@@ -88,6 +97,9 @@ export function usePosition() {
   return {
     positionList,
     loading,
+    page,
+    pageSize,
+    positionCount,
     fetchPositions,
     createPosition,
     updatePosition,

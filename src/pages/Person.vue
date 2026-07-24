@@ -3,6 +3,7 @@ import { h, ref, resolveComponent, useTemplateRef, watch } from 'vue';
 import type { User, UserPositionView } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { usePerson } from '../logic/usePerson';
+import { usePermission } from '../logic/usePermission';
 import {
   fetchUserPositionsRequest,
   createUserRequest,
@@ -10,6 +11,8 @@ import {
   assignUserPositionRequest,
   removeUserPositionRequest,
 } from '../api/userApi';
+
+const { can } = usePermission();
 
 // 人员表格ref
 const table = useTemplateRef("table");
@@ -229,6 +232,7 @@ const columns: TableColumn<User>[] = [
     id: 'actions',
     header: '操作',
     cell: ({ row }) => {
+      if (!can('user.assign')) return null;
       const UButton = resolveComponent('UButton');
       return h(UButton, {
         size: 'xs',
@@ -247,12 +251,13 @@ loadPositions();
 
 <template>
   <DashboardPanel title="人员">
+    <template v-if="can('user.read')">
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <UInput class="max-w-sm" icon="i-lucide-search" placeholder="筛选姓名或邮箱" @update:model-value="filter" />
         <div class="flex flex-wrap items-center gap-1.5">
-          <UButton label="新增人员" icon="i-lucide-plus" @click="openCreate" />
+          <UButton v-if="can('user.create')" label="新增人员" icon="i-lucide-plus" @click="openCreate" />
         <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个人员`" v-model:open="open">
-          <UButton label="删除" color="error" variant="subtle" icon="i-lucide-trash"></UButton>
+          <UButton v-if="can('user.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"></UButton>
           <template #body>
             确定要删除吗，此操作无法撤销？
             <div class="flex justify-end gap-2">
@@ -330,6 +335,13 @@ loadPositions();
         </div>
       </template>
     </UModal>
+    </template>
+    <template v-else>
+      <div class="flex flex-col items-center justify-center py-16 text-muted">
+        <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
+        <p class="text-lg">您没有访问此页面的权限</p>
+      </div>
+    </template>
   </DashboardPanel>
 </template>
 

@@ -2,6 +2,7 @@
 import { h, ref, resolveComponent } from "vue";
 import type { Department, Position } from "../utils/types";
 import { usePosition } from "../logic/usePosition";
+import { usePermission } from "../logic/usePermission";
 import {
   fetchDepartmentListRequest,
   fetchDepartmentsByPositionRequest,
@@ -11,13 +12,21 @@ import {
 } from "../api/userApi";
 import type { TableColumn } from "@nuxt/ui";
 
+const { can } = usePermission();
+
 const {
   positionList,
   loading,
+  page,
+  pageSize,
+  positionCount,
+  fetchPositions,
   createPosition,
   updatePosition,
   deletePosition,
 } = usePosition();
+
+const toast = useToast();
 
 const allDepartments = ref<Department[]>([]);
 const deptOptions = ref<{ label: string; value: string }[]>([]);
@@ -38,6 +47,7 @@ const assignOpen = ref(false);
 const assignTarget = ref<Position | null>(null);
 const selectedDeptIds = ref<string[]>([]);
 const currentDeptIds = ref<string[]>([]);
+const savingAssign = ref(false);
 
 const membersOpen = ref(false);
 const membersFor = ref<Position | null>(null);
@@ -98,16 +108,30 @@ async function openAssign(position: Position) {
 async function saveAssign() {
   if (!assignTarget.value) return;
   const pid = assignTarget.value.id;
+  savingAssign.value = true;
+  let failed = false;
   for (const d of allDepartments.value) {
     const isSelected = selectedDeptIds.value.includes(d.id);
     const isCurrent = currentDeptIds.value.includes(d.id);
     if (isSelected && !isCurrent) {
-      await assignPositionDepartmentRequest(pid, d.id);
+      const err = await assignPositionDepartmentRequest(pid, d.id);
+      if (err) {
+        failed = true;
+        toast.add({ title: "分配失败", description: err, color: "error" });
+      }
     } else if (!isSelected && isCurrent) {
-      await removePositionDepartmentRequest(pid, d.id);
+      const err = await removePositionDepartmentRequest(pid, d.id);
+      if (err) {
+        failed = true;
+        toast.add({ title: "取消分配失败", description: err, color: "error" });
+      }
     }
   }
-  assignOpen.value = false;
+  savingAssign.value = false;
+  if (!failed) {
+    toast.add({ title: "保存成功", description: "部门分配已更新", color: "success" });
+    assignOpen.value = false;
+  }
 }
 
 async function openMembers(position: Position) {
@@ -129,18 +153,32 @@ const columns: TableColumn<Position>[] = [
     header: "操作",
     cell: ({ row }) => {
       const UButton = resolveComponent("UButton");
-      return h("div", { class: "flex gap-1" }, [
-        h(UButton, { size: "xs", variant: "ghost", label: "部门", onClick: () => openAssign(row.original) }),
-        h(UButton, { size: "xs", variant: "ghost", label: "成员", onClick: () => openMembers(row.original) }),
-        h(UButton, { size: "xs", variant: "ghost", label: "编辑", onClick: () => openEdit(row.original) }),
-        h(UButton, {
-          size: "xs",
-          variant: "ghost",
-          color: "error",
-          label: "删除",
-          onClick: () => openDelete(row.original),
-        }),
-      ]);
+      const buttons: any[] = [];
+      if (can("position.update")) {
+        buttons.push(
+          h(UButton, { size: "xs", variant: "ghost", label: "部门", onClick: () => openAssign(row.original) })
+        );
+      }
+      if (can("user.read")) {
+        buttons.push(
+          h(UButton, { size: "xs", variant: "ghost", label: "成员", onClick: () => openMembers(row.original) })
+        );
+      }
+      if (can("position.update")) {
+        buttons.push(h(UButton, { size: "xs", variant: "ghost", label: "编辑", onClick: () => openEdit(row.original) }));
+      }
+      if (can("position.delete")) {
+        buttons.push(
+          h(UButton, {
+            size: "xs",
+            variant: "ghost",
+            color: "error",
+            label: "删除",
+            onClick: () => openDelete(row.original),
+          })
+        );
+      }
+      return h("div", { class: "flex gap-1" }, buttons);
     },
   },
 ];
@@ -150,8 +188,9 @@ loadDepartments();
 
 <template>
   <DashboardPanel title="职位">
+    <template v-if="can('position.read')">
     <div class="flex flex-wrap items-center justify-end gap-1.5">
-      <UButton label="新建职位" icon="i-lucide-plus" @click="openCreate" />
+      <UButton v-if="can('position.create')" label="新建职位" icon="i-lucide-plus" @click="openCreate" />
     </div>
 
     <UTable
@@ -162,6 +201,20 @@ loadDepartments();
       :columns="columns"
       class="flex-1 mt-3"
     />
+
+    <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
+      <div class="text-sm text-muted">
+        共 {{ positionCount }} 条
+      </div>
+      <UPagination
+        v-model:page="page"
+        :total="positionCount"
+        :page-size="pageSize"
+        show-edges
+        size="lg"
+        @update:page="(p: number) => fetchPositions(p)"
+      />
+    </div>
 
     <!-- 新建/编辑 -->
     <UModal v-model:open="open" :title="editing ? '编辑职位' : '新建职位'">
@@ -236,6 +289,13 @@ loadDepartments();
         </ul>
       </template>
     </UModal>
+    </template>
+    <template v-else>
+      <div class="flex flex-col items-center justify-center py-16 text-muted">
+        <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
+        <p class="text-lg">您没有访问此页面的权限</p>
+      </div>
+    </template>
   </DashboardPanel>
 </template>
 

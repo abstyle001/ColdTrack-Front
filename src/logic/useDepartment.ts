@@ -2,27 +2,36 @@ import { onMounted, ref } from "vue";
 import type { Department } from "../utils/types";
 import {
   fetchDepartmentListRequest,
-  fetchDepartmentTreeRequest,
+  fetchDepartmentPageRequest,
+  fetchDepartmentCountRequest,
   createDepartmentRequest,
   updateDepartmentRequest,
   deleteDepartmentRequest,
 } from "../api/userApi";
 
 export function useDepartment() {
+  // 当前页（用于表格构建树）
   const departmentList = ref<Department[]>([]);
-  const departmentTree = ref<Department[]>([]);
+  // 全部部门（用于新建/编辑的父部门下拉，不受分页影响）
+  const allDepartments = ref<Department[]>([]);
   const loading = ref(true);
+  const page = ref(1);
+  const pageSize = ref(10);
+  const departmentCount = ref(0);
 
   const toast = useToast();
 
-  async function fetchDepartments() {
+  async function fetchDepartments(pageNumber: number = 1) {
     loading.value = true;
-    const [list, tree] = await Promise.all([
+    const [pageData, countData, allData] = await Promise.all([
+      fetchDepartmentPageRequest(pageNumber, pageSize.value),
+      fetchDepartmentCountRequest(),
       fetchDepartmentListRequest(),
-      fetchDepartmentTreeRequest(),
     ]);
-    if (list) departmentList.value = list;
-    if (tree) departmentTree.value = tree as Department[];
+    if (pageData) departmentList.value = pageData;
+    if (countData !== null) departmentCount.value = countData;
+    if (allData) allDepartments.value = allData;
+    page.value = pageNumber;
     loading.value = false;
   }
 
@@ -43,7 +52,7 @@ export function useDepartment() {
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
-    await fetchDepartments();
+    await fetchDepartments(page.value);
     return data;
   }
 
@@ -64,7 +73,7 @@ export function useDepartment() {
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
-    await fetchDepartments();
+    await fetchDepartments(page.value);
     return data;
   }
 
@@ -85,7 +94,7 @@ export function useDepartment() {
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
-    await fetchDepartments();
+    await fetchDepartments(page.value);
     return true;
   }
 
@@ -93,8 +102,11 @@ export function useDepartment() {
 
   return {
     departmentList,
-    departmentTree,
+    allDepartments,
     loading,
+    page,
+    pageSize,
+    departmentCount,
     fetchDepartments,
     createDepartment,
     updateDepartment,

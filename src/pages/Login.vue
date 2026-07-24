@@ -50,10 +50,13 @@ import { ref, reactive } from 'vue';
 import request from '../utils/request';
 import { loginStatus, token } from '../utils/useStorage';
 import { useRouter } from 'vue-router';
+import { useUserStore } from '../store';
+import { getTokenClaimRequest } from '../api/userApi';
 import * as z from 'zod';
 import type { FormSubmitEvent } from '@nuxt/ui'
 
 const router = useRouter();
+const userStore = useUserStore();
 const toast = useToast();
 
 const loading = ref(false);
@@ -96,6 +99,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   token.value = data;
   loginStatus.value = true;
   loading.value = false;
+  const claim = await getTokenClaimRequest();
+  if (claim) {
+    userStore.setPermissions(claim.permissions, claim.roles);
+  }
   setTimeout(() => {
     router.replace('/');
   }, 2000);

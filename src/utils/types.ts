@@ -19,6 +19,7 @@ interface Department {
   addition?: string;
   createdAt: string;
   children?: Department[];
+  depth?: number;
 }
 
 interface DepartmentTree extends Department {
@@ -73,6 +74,22 @@ interface TokenClaim {
   email: string;
   userName: string;
   role: string;
+  roles: string[];
+  permissions: string[];
 }
 
-export type { User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim };
+interface Permission {
+  id: number;
+  key: string;
+  name: string;
+  group: string;
+  description?: string;
+}
+
+interface Role {
+  id: string;
+  name: string;
+  permissions: Permission[];
+}
+
+export type { User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim, Permission, Role };

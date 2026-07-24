@@ -6,6 +6,7 @@ import { getTokenClaimRequest, getUserInfoRequest } from '../api/userApi';
 import { loginStatus, token } from '../utils/useStorage';
 import router from '../router';
 import { useUserStore } from '../store';
+import { usePermission } from '../logic/usePermission';
 
 defineProps<{
   collapsed?: boolean
@@ -144,6 +145,8 @@ async function getUserInfo(id: string) {
 onMounted(async () => {
   const data = await getTokenClaimRequest();
   if (data) {
+    useUserStore().setPermissions(data.permissions, data.roles);
+    usePermission().refresh();
     getUserInfo(data.id);
   }
 })

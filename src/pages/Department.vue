@@ -1,17 +1,80 @@
 <script setup lang="ts">
-import { h, ref, resolveComponent } from "vue";
+import { computed, h, ref, resolveComponent, watch } from "vue";
 import type { Department, User } from "../utils/types";
 import { useDepartment } from "../logic/useDepartment";
+import { usePermission } from "../logic/usePermission";
 import { fetchUserListRequest } from "../api/userApi";
 import type { TableColumn } from "@nuxt/ui";
 
+const UButton = resolveComponent("UButton");
+const { can } = usePermission();
+
 const {
   departmentList,
+  allDepartments,
   loading,
+  page,
+  pageSize,
+  departmentCount,
+  fetchDepartments,
   createDepartment,
   updateDepartment,
   deleteDepartment,
 } = useDepartment();
+
+// 由扁平列表在客户端构建部门树（后端 /department/tree 对顶级部门处理有误）
+const treeData = ref<Department[]>([]);
+
+function buildTree(list: Department[]): Department[] {
+  const map = new Map<string, Department>();
+  list.forEach((d) => map.set(d.id, { ...d, children: [] }));
+  const roots: Department[] = [];
+  map.forEach((node) => {
+    const pid = node.parentId;
+    if (pid && pid !== node.id && map.has(pid)) {
+      map.get(pid)!.children!.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+}
+
+// 折叠状态：已展开（显示其子部门）的部门 id
+const expandedIds = ref<Set<string>>(new Set());
+
+// 根据折叠状态展开为可见的扁平列表（含 depth，用于缩进）
+const visibleRows = computed<Department[]>(() => {
+  const out: Department[] = [];
+  const walk = (nodes: Department[], depth: number) => {
+    for (const n of nodes) {
+      out.push({ ...n, depth });
+      if (expandedIds.value.has(n.id) && n.children && n.children.length) {
+        walk(n.children, depth + 1);
+      }
+    }
+  };
+  walk(treeData.value, 0);
+  return out;
+});
+
+function toggleExpand(id: string) {
+  const next = new Set(expandedIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  expandedIds.value = next;
+}
+
+watch(
+  departmentList,
+  (list) => {
+    const tree = buildTree(list);
+    treeData.value = tree;
+    // 默认展开一级部门
+    expandedIds.value = new Set(tree.map((d) => d.id));
+  },
+  { immediate: true }
+);
 
 
 const userList = ref<User[]>([]);
@@ -49,7 +112,7 @@ async function loadUsers() {
 }
 
 function refreshParentOptions() {
-  parentOptions.value = departmentList.value.map((d) => ({
+  parentOptions.value = allDepartments.value.map((d) => ({
     label: `${"　".repeat(Math.max(0, d.level - 1))}${d.name}`,
     value: d.id,
   }));
@@ -124,11 +187,33 @@ const columns: TableColumn<Department>[] = [
   {
     accessorKey: "name",
     header: "部门名称",
-    cell: ({ row }) =>
-      h("div", { class: "flex items-center gap-2" }, [
-        h("span", { class: "text-muted" }, "　".repeat(Math.max(0, row.original.level - 1))),
-        h("span", { class: "font-medium" }, row.original.name),
-      ]),
+    cell: ({ row }) => {
+      const dept = row.original;
+      const hasChildren = !!(dept.children && dept.children.length);
+      const depth = dept.depth ?? 0;
+      return h(
+        "div",
+        { class: "flex items-center gap-1", style: { paddingLeft: `${depth * 16}px` } },
+        [
+          hasChildren
+            ? h(UButton, {
+                size: "xs",
+                variant: "ghost",
+                square: true,
+                color: "neutral",
+                icon: expandedIds.value.has(dept.id)
+                  ? "i-lucide-chevron-down"
+                  : "i-lucide-chevron-right",
+                onClick: (e: MouseEvent) => {
+                  e.stopPropagation();
+                  toggleExpand(dept.id);
+                },
+              })
+            : h("span", { class: "w-6" }),
+          h("span", { class: "font-medium" }, dept.name),
+        ]
+      );
+    },
   },
   {
     accessorKey: "managerName",
@@ -152,28 +237,39 @@ const columns: TableColumn<Department>[] = [
     id: "actions",
     header: "操作",
     cell: ({ row }) => {
-      const UButton = resolveComponent("UButton");
-      return h("div", { class: "flex gap-1" }, [
-        h(UButton, {
-          size: "xs",
-          variant: "ghost",
-          label: "职位",
-          onClick: () => openPositions(row.original),
-        }),
-        h(UButton, {
-          size: "xs",
-          variant: "ghost",
-          label: "编辑",
-          onClick: () => openEdit(row.original),
-        }),
-        h(UButton, {
-          size: "xs",
-          variant: "ghost",
-          color: "error",
-          label: "删除",
-          onClick: () => openDelete(row.original),
-        }),
-      ]);
+      const buttons: any[] = [];
+      if (can("position.read")) {
+        buttons.push(
+          h(UButton, {
+            size: "xs",
+            variant: "ghost",
+            label: "职位",
+            onClick: () => openPositions(row.original),
+          })
+        );
+      }
+      if (can("department.update")) {
+        buttons.push(
+          h(UButton, {
+            size: "xs",
+            variant: "ghost",
+            label: "编辑",
+            onClick: () => openEdit(row.original),
+          })
+        );
+      }
+      if (can("department.delete")) {
+        buttons.push(
+          h(UButton, {
+            size: "xs",
+            variant: "ghost",
+            color: "error",
+            label: "删除",
+            onClick: () => openDelete(row.original),
+          })
+        );
+      }
+      return h("div", { class: "flex gap-1" }, buttons);
     },
   },
 ];
@@ -183,18 +279,33 @@ loadUsers();
 
 <template>
   <DashboardPanel title="部门">
+    <template v-if="can('department.read')">
     <div class="flex flex-wrap items-center justify-between gap-1.5">
-      <UButton label="新建部门" icon="i-lucide-plus" @click="openCreate" />
+      <UButton v-if="can('department.create')" label="新建部门" icon="i-lucide-plus" @click="openCreate" />
     </div>
 
     <UTable
       :loading="loading"
       loading-color="primary"
       loading-animation="carousel"
-      :data="departmentList"
+      :data="visibleRows"
       :columns="columns"
       class="flex-1 mt-3"
     />
+
+    <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
+      <div class="text-sm text-muted">
+        共 {{ departmentCount }} 条
+      </div>
+      <UPagination
+        v-model:page="page"
+        :total="departmentCount"
+        :page-size="pageSize"
+        show-edges
+        size="lg"
+        @update:page="(p: number) => fetchDepartments(p)"
+      />
+    </div>
 
     <!-- 新建/编辑 -->
     <UModal v-model:open="open" :title="editing ? '编辑部门' : '新建部门'">
@@ -263,6 +374,13 @@ loadUsers();
         </ul>
       </template>
     </UModal>
+    </template>
+    <template v-else>
+      <div class="flex flex-col items-center justify-center py-16 text-muted">
+        <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
+        <p class="text-lg">您没有访问此页面的权限</p>
+      </div>
+    </template>
   </DashboardPanel>
 </template>
 
