@@ -9,6 +9,7 @@ import type {
   UserPositionView,
   Permission,
   Role,
+  Task,
 } from "../utils/types";
 
 async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
@@ -359,6 +360,90 @@ async function fetchUserRolesRequest(userId: string) {
   return err ? null : data;
 }
 
+// ============ 任务 Task ============
+async function fetchTaskListRequest() {
+  const [err, data] = await request<Task[]>("/task", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function getTaskRequest(id: number) {
+  const [err, data] = await request<Task>(`/task/${id}`, "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function fetchTaskPageRequest(pageNumber: number, pageSize: number, status?: string, priority?: string) {
+  const params: Record<string, string | number> = {
+    number: pageNumber,
+    size: pageSize,
+  };
+  if (status) params.status = status;
+  if (priority) params.priority = priority;
+  const [err, data] = await request<Task[]>("/task/page", "GET", {
+    token: token.value,
+    body: params,
+  });
+  return err ? null : data;
+}
+
+async function fetchTaskCountRequest(status?: string, priority?: string) {
+  const params: Record<string, string> = {};
+  if (status) params.status = status;
+  if (priority) params.priority = priority;
+  const [err, data] = await request<number>("/task/count", "GET", {
+    token: token.value,
+    body: params,
+  });
+  return err ? null : data;
+}
+
+async function createTaskRequest(task: Partial<Task>) {
+  const [err, data] = await request<Task>("/task", "POST", {
+    token: token.value,
+    body: {
+      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      priority: task.priority,
+      deadline: task.deadline,
+    },
+  });
+  return { err, data };
+}
+
+async function updateTaskRequest(task: Partial<Task>) {
+  const [err, data] = await request<Task>(`/task/${task.id}`, "PUT", {
+    token: token.value,
+    body: {
+      title: task.title,
+      description: task.description,
+      assigneeId: task.assigneeId,
+      status: task.status,
+      priority: task.priority,
+      deadline: task.deadline,
+    },
+  });
+  return { err, data };
+}
+
+async function deleteTaskRequest(id: number) {
+  const [err, _] = await request<void>(`/task/${id}`, "DELETE", {
+    token: token.value,
+  });
+  return err;
+}
+
+async function deleteTaskBatchRequest(ids: number[]) {
+  const [err, _] = await request<void>("/task/batch", "DELETE", {
+    token: token.value,
+    body: ids,
+  });
+  return err;
+}
+
 export {
   fetchUserPageRequest,
   fetchUserListRequest,
@@ -398,4 +483,12 @@ export {
   removeUserFromRoleRequest,
   fetchRoleUsersRequest,
   fetchUserRolesRequest,
+  fetchTaskListRequest,
+  getTaskRequest,
+  fetchTaskPageRequest,
+  fetchTaskCountRequest,
+  createTaskRequest,
+  updateTaskRequest,
+  deleteTaskRequest,
+  deleteTaskBatchRequest,
 };

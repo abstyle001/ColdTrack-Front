@@ -55,16 +55,16 @@ interface User {
 }
 
 interface Task {
-  id: string;
+  id: number;
   title: string;
   description: string;
   assigneeId: string;
-  assignee?: User;
+  assigneeName?: string;
   creatorId: string;
-  creator?: User;
-  status: 'todo' | 'in_progress' | 'review' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  deadline: string;
+  creatorName?: string;
+  status: 'Todo' | 'InProgress' | 'Review' | 'Completed';
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  deadline?: string;
   createdAt: string;
   updatedAt: string;
 }
