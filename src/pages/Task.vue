@@ -12,7 +12,8 @@ import {
 
 const { can } = usePermission();
 
-const table = useTemplateRef("table");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const table: any = useTemplateRef("table");
 const toast = useToast();
 
 const {

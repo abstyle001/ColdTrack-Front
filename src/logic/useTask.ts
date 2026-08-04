@@ -1,7 +1,6 @@
-import { onMounted, ref, type Ref, type ShallowRef, type ShallowUnwrapRef } from "vue";
+import { onMounted, ref } from "vue";
 import type { Task, User } from "../utils/types";
 import type { AcceptableValue } from "@nuxt/ui";
-import type { Table } from "@tanstack/table-core";
 import {
   fetchTaskPageRequest,
   fetchTaskCountRequest,
@@ -9,14 +8,8 @@ import {
   fetchUserListRequest,
 } from "../api/userApi";
 
-export function useTask(
-  tableRef: Readonly<
-    ShallowRef<ShallowUnwrapRef<{
-      tableRef: Ref<HTMLTableElement | null, HTMLTableElement | null>;
-      tableApi: Table<Task>;
-    }> | null>
-  >
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useTask(tableRef: any) {
   const taskList = ref<Task[]>([]);
   const originalTaskList = ref<Task[]>([]);
   const taskCount = ref<number>(0);
@@ -101,7 +94,8 @@ export function useTask(
       return;
     }
     const selectedIds: number[] = [];
-    selectedRows.forEach((row) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    selectedRows.forEach((row: any) => {
       selectedIds.push(row.original.id);
     });
     const err = await deleteTaskBatchRequest(selectedIds);
