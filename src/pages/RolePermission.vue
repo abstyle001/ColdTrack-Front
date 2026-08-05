@@ -4,7 +4,7 @@ import { usePermission } from "../logic/usePermission";
 import {
   fetchRolesRequest,
   fetchPermissionsCatalogRequest,
-  fetchUserListRequest,
+  fetchUserBriefRequest,
   fetchRoleUsersRequest,
   fetchUserRolesRequest,
   createRoleRequest,
@@ -12,14 +12,15 @@ import {
   addUserToRoleRequest,
   removeUserFromRoleRequest,
 } from "../api/userApi";
-import type { Role, Permission, User } from "../utils/types";
+import type { Role, Permission, User, UserBrief } from "../utils/types";
+import UserTransfer from "../components/UserTransfer.vue";
 
 const toast = useToast();
 const { can } = usePermission();
 
 const roles = ref<Role[]>([]);
 const permissionCatalog = ref<Permission[]>([]);
-const allUsers = ref<User[]>([]);
+const allUserBriefs = ref<UserBrief[]>([]);
 const roleUsers = ref<User[]>([]);
 const loading = ref(false);
 
@@ -32,15 +33,7 @@ const groupedPermissions = computed(() => {
   return [...map.entries()].map(([group, perms]) => ({ group, perms }));
 });
 
-const availableUsers = computed(() => {
-  const ids = new Set(roleUsers.value.map((u) => u.id));
-  return allUsers.value.filter((u) => !ids.has(u.id)).map((u) => ({
-    label: u.nickName || u.userName || u.email,
-    value: u.id,
-  }));
-});
-
-// ── create role ──
+// ─── create role ───
 const createOpen = ref(false);
 const createName = ref("");
 const creating = ref(false);
@@ -64,7 +57,7 @@ async function submitCreate() {
   await loadRoles();
 }
 
-// ── permissions modal ──
+// ─── permissions modal ───
 const permOpen = ref(false);
 const permTarget = ref<Role | null>(null);
 const selectedKeys = ref<Set<string>>(new Set());
@@ -99,33 +92,32 @@ async function savePerms() {
   await loadRoles();
 }
 
-// ── users modal ──
+// ─── users modal ───
 const userOpen = ref(false);
 const userTarget = ref<Role | null>(null);
-const addUserId = ref("");
 const savingUsers = ref(false);
 
 async function openUsers(role: Role) {
   userTarget.value = role;
-  addUserId.value = "";
   roleUsers.value = (await fetchRoleUsersRequest(role.id)) ?? [];
   userOpen.value = true;
 }
 
-async function addUser() {
-  if (!userTarget.value || !addUserId.value) return;
+async function handleAddUsers(userIds: string[]) {
+  if (!userTarget.value) return;
   savingUsers.value = true;
-  const err = await addUserToRoleRequest(userTarget.value.id, addUserId.value);
-  if (err) {
-    toast.add({ title: "添加失败", description: err, color: "error" });
-  } else {
-    toast.add({ title: "已添加", color: "success" });
-    roleUsers.value = (await fetchRoleUsersRequest(userTarget.value.id)) ?? [];
+  for (const uid of userIds) {
+    const err = await addUserToRoleRequest(userTarget.value.id, uid);
+    if (err) {
+      toast.add({ title: "添加失败", description: err, color: "error" });
+    }
   }
+  toast.add({ title: `已添加 ${userIds.length} 位用户`, color: "success" });
+  roleUsers.value = (await fetchRoleUsersRequest(userTarget.value.id)) ?? [];
   savingUsers.value = false;
 }
 
-async function removeUser(userId: string) {
+async function handleRemoveUser(userId: string) {
   if (!userTarget.value) return;
   savingUsers.value = true;
   const err = await removeUserFromRoleRequest(userTarget.value.id, userId);
@@ -138,7 +130,7 @@ async function removeUser(userId: string) {
   savingUsers.value = false;
 }
 
-// ── audit user roles ──
+// ─── audit user roles ───
 const auditUserId = ref("");
 const auditUserRoles = ref<Role[]>([]);
 const auditLoading = ref(false);
@@ -162,7 +154,7 @@ async function removeUserRole(roleId: string, userId: string) {
   }
 }
 
-// ── data ──
+// ─── data ───
 async function loadRoles() {
   loading.value = true;
   const data = await fetchRolesRequest();
@@ -175,15 +167,15 @@ onMounted(async () => {
   const [r, p, u] = await Promise.all([
     fetchRolesRequest(),
     fetchPermissionsCatalogRequest(),
-    fetchUserListRequest(),
+    fetchUserBriefRequest(),
   ]);
   roles.value = r ?? [];
   permissionCatalog.value = p ?? [];
-  allUsers.value = u ?? [];
+  allUserBriefs.value = u ?? [];
   loading.value = false;
 });
 
-// ── table columns ──
+// ─── table columns ───
 const columns = [
   { accessorKey: "name", header: "角色名" },
   {
@@ -291,32 +283,24 @@ const columns = [
     <UModal v-model:open="userOpen" :title="`管理用户 — ${userTarget?.name ?? ''}`">
       <template #body>
         <div class="flex flex-col gap-4">
-          <div>
-            <p class="font-semibold text-sm mb-2">添加用户到角色</p>
-            <div class="flex gap-2">
-              <USelect
-                v-model="addUserId"
-                :items="availableUsers"
-                placeholder="选择用户"
-                class="flex-1" />
-              <UButton
-                label="添加"
-                color="primary"
-                variant="solid"
-                :disabled="!addUserId"
-                :loading="savingUsers"
-                @click="addUser" />
-            </div>
-          </div>
+          <!-- Transfer panel: add / remove users -->
+          <UserTransfer
+            :all-users="allUserBriefs"
+            :role-users="roleUsers"
+            :loading="savingUsers"
+            @add="handleAddUsers"
+            @remove="handleRemoveUser"
+          />
 
           <USeparator />
 
+          <!-- Audit user roles -->
           <div>
             <p class="font-semibold text-sm mb-2">查看 / 管理用户的全部角色</p>
             <div class="flex gap-2 mb-2">
               <USelect
                 v-model="auditUserId"
-                :items="allUsers.map(u => ({ label: (u.nickName || u.userName) + ' (' + u.email + ')', value: u.id }))"
+                :items="allUserBriefs.map(u => ({ label: (u.nickName || u.userName) + ' (' + u.email + ')', value: u.id }))"
                 placeholder="选择要检查的用户"
                 class="flex-1" />
             </div>
@@ -337,27 +321,6 @@ const columns = [
                   variant="ghost"
                   label="移除此角色"
                   @click="removeUserRole(r.id, auditUserId)" />
-              </div>
-            </div>
-          </div>
-
-          <USeparator />
-
-          <div>
-            <p class="font-semibold text-sm mb-2">当前成员 ({{ roleUsers.length }})</p>
-            <div v-if="roleUsers.length === 0" class="text-muted text-sm">暂无成员</div>
-            <div v-else class="flex flex-col gap-1 max-h-48 overflow-auto">
-              <div
-                v-for="u in roleUsers"
-                :key="u.id"
-                class="flex items-center justify-between rounded bg-elevated px-3 py-2">
-                <span>{{ u.nickName || u.userName }} <span class="text-xs text-muted">{{ u.email }}</span></span>
-                <UButton
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  label="移除"
-                  @click="removeUser(u.id)" />
               </div>
             </div>
           </div>

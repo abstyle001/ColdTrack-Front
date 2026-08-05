@@ -9,6 +9,7 @@ import type {
   UserPositionView,
   Permission,
   Role,
+  UserBrief,
   Task,
 } from "../utils/types";
 
@@ -444,6 +445,14 @@ async function deleteTaskBatchRequest(ids: number[]) {
   return err;
 }
 
+
+async function fetchUserBriefRequest(includeAdmin: boolean = false) {
+  const [err, data] = await request<UserBrief[]>(`/user/brief?includeAdmin=${includeAdmin}`, "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
 export {
   fetchUserPageRequest,
   fetchUserListRequest,
@@ -491,4 +500,5 @@ export {
   updateTaskRequest,
   deleteTaskRequest,
   deleteTaskBatchRequest,
+  fetchUserBriefRequest,
 };

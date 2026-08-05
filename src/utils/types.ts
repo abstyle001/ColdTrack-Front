@@ -92,4 +92,14 @@ interface Role {
   permissions: Permission[];
 }
 
-export type { User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim, Permission, Role };
+
+interface UserBrief {
+  id: string;
+  userName: string;
+  email: string;
+  nickName: string;
+  avatar?: string;
+  departmentNames: string[];
+  positionNames: string[];
+}
+export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim, Permission, Role };
