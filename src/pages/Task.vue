@@ -73,7 +73,13 @@ const form = ref<{
   deadline: '',
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const deadlineDate: any = ref(undefined);
+const deadlineTime: any = ref(undefined);
+const popoverOpen = ref(false);
+
 function openCreate() {
+  console.log("openCreate called");
   editTarget.value = null;
   form.value = {
     title: '',
@@ -83,6 +89,9 @@ function openCreate() {
     status: 'Todo',
     deadline: '',
   };
+  deadlineDate.value = undefined;
+  deadlineTime.value = undefined;
+  popoverOpen.value = false;
   formOpen.value = true;
 }
 
@@ -96,10 +105,14 @@ function openEdit(task: Task) {
     status: task.status,
     deadline: task.deadline ? task.deadline.replace(' ', 'T') : '',
   };
+  deadlineDate.value = task.deadline ? new Date(task.deadline.replace(' ', 'T')) : undefined;
+  deadlineTime.value = task.deadline ? new Date(task.deadline.replace(' ', 'T')) : undefined;
+  popoverOpen.value = false;
   formOpen.value = true;
 }
 
 async function submitForm() {
+  console.log("submitForm called, title:", form.value.title);
   if (!form.value.title || formSaving.value) return;
   formSaving.value = true;
   let err: string | null = null;
@@ -107,13 +120,13 @@ async function submitForm() {
     const r = await updateTaskRequest({
       id: editTarget.value.id,
       ...form.value,
-      deadline: form.value.deadline ? form.value.deadline.replace('T', ' ') + ':00' : undefined,
+      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
     });
     err = r.err;
   } else {
     const r = await createTaskRequest({
       ...form.value,
-      deadline: form.value.deadline ? form.value.deadline.replace('T', ' ') + ':00' : undefined,
+      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
     });
     err = r.err;
   }
@@ -196,6 +209,29 @@ const priorityLabel: Record<string, string> = {
   High: '高',
   Urgent: '紧急',
 };
+
+function formatTime(d: any): string {
+  if (d && typeof d.year === 'number') {
+    const pad = (n: any) => String(Math.floor(Number(n) || 0)).padStart(2, '0');
+    return pad(typeof d.hour === 'number' ? d.hour : 0) + ':' + pad(typeof d.minute === 'number' ? d.minute : 0);
+  }
+  if (d && typeof d.getHours === 'function') {
+    const pad = (n: any) => String(Math.floor(Number(n) || 0)).padStart(2, '0');
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  return '00:00';
+}
+
+function formatDate(d: any): string {
+  const pad = (n: any) => String(Math.floor(Number(n) || 0)).padStart(2, '0');
+  if (d && typeof d.year === 'number') {
+    return d.year + '-' + pad(d.month) + '-' + pad(d.day);
+  }
+  if (d && typeof d.getMonth === 'function') {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  return '';
+}
 
 function isOverdue(deadline?: string): boolean {
   if (!deadline) return false;
@@ -348,8 +384,8 @@ const columns: TableColumn<Task>[] = [
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
           <UButton v-if="can('task.create')" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
+          <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
           <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
-            <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash" />
             <template #body>
               确定要删除吗，此操作无法撤销？
               <div class="flex justify-end gap-2">
@@ -379,7 +415,7 @@ const columns: TableColumn<Task>[] = [
       </div>
 
       <!-- 新建 / 编辑任务 -->
-      <UModal v-model:open="formOpen" :title="editTarget ? '编辑任务' : '新建任务'">
+      <UModal v-model:open="formOpen" :title="editTarget ? '编辑任务' : '新建任务'" size="xl">
         <template #body>
           <div class="flex flex-col gap-3">
             <UFormField label="标题" required>
@@ -404,8 +440,22 @@ const columns: TableColumn<Task>[] = [
                   class="w-full"
                 />
               </UFormField>
-              <UFormField label="截止日期" class="flex-1">
-                <UInput v-model="form.deadline" type="datetime-local" class="w-full" />
+            </div>
+            <div class="flex gap-3">
+              <UFormField label="截止日期">
+                <UInputDate v-model="deadlineDate">
+                  <template #trailing>
+                    <UPopover v-model:open="popoverOpen">
+                      <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" aria-label="Select a date" class="px-0" />
+                      <template #content>
+                        <UCalendar v-model="deadlineDate" @update:model-value="popoverOpen = false" class="p-2" />
+                      </template>
+                    </UPopover>
+                  </template>
+                </UInputDate>
+              </UFormField>
+              <UFormField label="时间" class="w-28">
+                <UInputTime v-model="deadlineTime" />
               </UFormField>
             </div>
             <UFormField v-if="editTarget" label="状态">

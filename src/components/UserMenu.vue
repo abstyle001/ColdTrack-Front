@@ -46,7 +46,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   children: [{
     label: '主题色',
     slot: 'chip',
-    chip: appConfig.ui.colors.primary,
+    chip: appConfig.ui.primary,
     content: {
       align: 'center',
       collisionPadding: 16
@@ -55,18 +55,18 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       label: color,
       chip: color,
       slot: 'chip',
-      checked: appConfig.ui.colors.primary === color,
+      checked: appConfig.ui.primary === color,
       type: 'checkbox',
       onSelect: (e) => {
         e.preventDefault()
 
-        appConfig.ui.colors.primary = color
+        appConfig.ui.primary = color
       }
     }))
   }, {
     label: 'Neutral',
     slot: 'chip',
-    chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
+    chip: appConfig.ui.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.neutral,
     content: {
       align: 'end',
       collisionPadding: 16
@@ -76,11 +76,11 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       chip: color === 'neutral' ? 'old-neutral' : color,
       slot: 'chip',
       type: 'checkbox',
-      checked: appConfig.ui.colors.neutral === color,
+      checked: appConfig.ui.neutral === color,
       onSelect: (e) => {
         e.preventDefault()
 
-        appConfig.ui.colors.neutral = color
+        appConfig.ui.neutral = color
       }
     }))
   }]
