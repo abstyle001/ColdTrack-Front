@@ -7,6 +7,8 @@ import type { TableColumn } from '@nuxt/ui';
 import { useTask } from '../logic/useTask';
 import { usePermission } from '../logic/usePermission';
 import { useUserStore } from '../store';
+import TaskKanban from '../components/TaskKanban.vue';
+import { fetchTaskListRequest } from '../api/userApi';
 import {
   createTaskRequest,
   updateTaskRequest,
@@ -254,6 +256,17 @@ const page = ref<number>(1);
 const UIcon = resolveComponent('UIcon');
 const UCheckbox = resolveComponent('UCheckbox');
 const UBadge = resolveComponent('UBadge');
+const viewMode = ref<'table' | 'kanban'>('table');
+const kanbanTasks = ref<Task[]>([]);
+const kanbanLoading = ref(false);
+
+async function fetchAllTasks() {
+  kanbanLoading.value = true;
+  const data = await fetchTaskListRequest();
+  kanbanTasks.value = data || [];
+  kanbanLoading.value = false;
+}
+
 
 const columns: TableColumn<Task>[] = [
   {
@@ -366,9 +379,10 @@ const columns: TableColumn<Task>[] = [
             class="w-32"
             @update:model-value="applyFilter()"
           />
-        </div>
-        <div class="flex flex-wrap items-center gap-1.5">
-          <UButton v-if="can('task.create')" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
+          <div class="inline-flex rounded-md border border-default overflow-hidden ml-2">
+            <button type="button" :class="viewMode === 'table' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'table'">表格</button>
+            <button type="button" :class="viewMode === 'kanban' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'kanban'; fetchAllTasks()">看板</button>
+          </div>
           <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
           <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
             <template #body>
@@ -382,6 +396,7 @@ const columns: TableColumn<Task>[] = [
         </div>
       </div>
 
+      <div v-if="viewMode === 'table'" class="flex-1 flex flex-col">
       <UTable
         ref="table"
         :loading="loading"
@@ -417,6 +432,13 @@ const columns: TableColumn<Task>[] = [
         <div class="flex items-center gap-1.5">
           <UPagination v-model:page="page" :total="taskCount" show-edges size="lg" @update:page="updatePage" />
         </div>
+      </div>
+
+      </div>
+
+      <div v-if="viewMode === 'kanban'" class="flex-1">
+        <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">加载中...</div>
+        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" @edit="openEdit" @delete="confirmDelete" @statusChanged="fetchAllTasks" />
       </div>
 
       <!-- 新建 / 编辑任务 -->
@@ -502,3 +524,5 @@ const columns: TableColumn<Task>[] = [
 </template>
 
 <style scoped></style>
+
+

@@ -1,4 +1,4 @@
-import { token } from "../utils/useStorage";
+﻿import { token } from "../utils/useStorage";
 import request from "../utils/request";
 import type {
   TokenClaim,
@@ -447,6 +447,13 @@ async function deleteTaskBatchRequest(ids: number[]) {
   return err;
 }
 
+async function updateTaskStatusRequest(id: number, status: string) {
+  const [err, data] = await request<Task>(`/task/${id}/status`, "PATCH", {
+    token: token.value,
+    body: { status },
+  });
+  return { err, data };
+}
 
 async function fetchUserBriefRequest(includeAdmin: boolean = false) {
   const [err, data] = await request<UserBrief[]>(`/user/brief?includeAdmin=${includeAdmin}`, "GET", {
@@ -502,5 +509,6 @@ export {
   updateTaskRequest,
   deleteTaskRequest,
   deleteTaskBatchRequest,
+  updateTaskStatusRequest,
   fetchUserBriefRequest,
 };
