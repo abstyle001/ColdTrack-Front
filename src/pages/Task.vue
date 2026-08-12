@@ -1,5 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { h, ref, resolveComponent, useTemplateRef, computed } from 'vue';
+import { parseDateTime, toCalendarDate, toTime } from '@internationalized/date';
+import type { CalendarDateTime, CalendarDate, Time } from '@internationalized/date';
 import type { Task } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { useTask } from '../logic/useTask';
@@ -78,13 +80,11 @@ const form = ref<{
   deadline: '',
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const deadlineDate: any = ref(undefined);
-const deadlineTime: any = ref(undefined);
+const deadlineDate = ref<CalendarDate | undefined>(undefined);
+const deadlineTime = ref<Time | undefined>(undefined);
 const popoverOpen = ref(false);
 
 function openCreate() {
-  console.log("openCreate called");
   editTarget.value = null;
   form.value = {
     title: '',
@@ -102,22 +102,39 @@ function openCreate() {
 
 function openEdit(task: Task) {
   editTarget.value = task;
+  const deadline = task.deadline;
+  const dateObj = parseDeadlineDate(deadline);
   form.value = {
     title: task.title,
     description: task.description || '',
     assigneeId: task.assigneeId || '',
     priority: task.priority,
     status: task.status,
-    deadline: task.deadline ? task.deadline.replace(' ', 'T') : '',
+    deadline: deadline || '',
   };
-  deadlineDate.value = task.deadline ? new Date(task.deadline.replace(' ', 'T')) : undefined;
-  deadlineTime.value = task.deadline ? new Date(task.deadline.replace(' ', 'T')) : undefined;
+  if (dateObj) {
+    deadlineDate.value = toCalendarDate(dateObj);
+    deadlineTime.value = toTime(dateObj);
+  } else {
+    deadlineDate.value = undefined;
+    deadlineTime.value = undefined;
+  }
   popoverOpen.value = false;
   formOpen.value = true;
 }
 
+/** Parse a deadline string into a CalendarDateTime object, or undefined */
+function parseDeadlineDate(raw: string | undefined | null): CalendarDateTime | undefined {
+  if (!raw) return undefined;
+  const isoStr = raw.includes('T') ? raw : raw.replace(' ', 'T');
+  try {
+    return parseDateTime(isoStr);
+  } catch {
+    return undefined;
+  }
+}
+
 async function submitForm() {
-  console.log("submitForm called, title:", form.value.title);
   if (!form.value.title || formSaving.value) return;
   formSaving.value = true;
   let err: string | null = null;
@@ -125,13 +142,13 @@ async function submitForm() {
     const r = await updateTaskRequest({
       id: editTarget.value.id,
       ...form.value,
-      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
+      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + ' ' + formatTime(deadlineTime.value) + ':00' : undefined,
     });
     err = r.err;
   } else {
     const r = await createTaskRequest({
       ...form.value,
-      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
+      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + ' ' + formatTime(deadlineTime.value) + ':00' : undefined,
     });
     err = r.err;
   }
@@ -188,7 +205,7 @@ async function doDelete() {
   fetchList();
 }
 
-// ===== 状态/优先级标签 =====
+// ===== 状态 / 优先级标签 =====
 const statusColor: Record<string, string> = {
   Todo: 'neutral',
   InProgress: 'info',
@@ -215,27 +232,16 @@ const priorityLabel: Record<string, string> = {
   Urgent: '紧急',
 };
 
-function formatTime(d: any): string {
-  if (d && typeof d.year === 'number') {
-    const pad = (n: any) => String(Math.floor(Number(n) || 0)).padStart(2, '0');
-    return pad(typeof d.hour === 'number' ? d.hour : 0) + ':' + pad(typeof d.minute === 'number' ? d.minute : 0);
-  }
-  if (d && typeof d.getHours === 'function') {
-    const pad = (n: any) => String(Math.floor(Number(n) || 0)).padStart(2, '0');
-    return pad(d.getHours()) + ':' + pad(d.getMinutes());
-  }
-  return '00:00';
+function formatTime(d: Time | CalendarDateTime | undefined): string {
+  if (!d) return '00:00';
+  const pad = (n: number) => String(Math.floor(n || 0)).padStart(2, '0');
+  return 'hour' in d ? pad(d.hour) + ':' + pad(d.minute) : '00:00';
 }
 
-function formatDate(d: any): string {
-  const pad = (n: any) => String(Math.floor(Number(n) || 0)).padStart(2, '0');
-  if (d && typeof d.year === 'number') {
-    return d.year + '-' + pad(d.month) + '-' + pad(d.day);
-  }
-  if (d && typeof d.getMonth === 'function') {
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-  return '';
+function formatDate(d: CalendarDate | CalendarDateTime | undefined): string {
+  if (!d) return '';
+  const pad = (n: number) => String(Math.floor(n || 0)).padStart(2, '0');
+  return d.year + '-' + pad(d.month) + '-' + pad(d.day);
 }
 
 function isOverdue(deadline?: string): boolean {
@@ -332,36 +338,10 @@ const columns: TableColumn<Task>[] = [
       ]);
     },
   },
+  // Operations via template slot below (id: 'actions')
   {
     id: 'actions',
     header: '操作',
-    cell: ({ row }) => {
-      const UButton = resolveComponent('UButton');
-      const buttons = [];
-      if (can('task.update')) {
-        buttons.push(
-          h(UButton, {
-            size: 'xs',
-            variant: 'ghost',
-            label: '编辑',
-            onClick: () => openEdit(row.original),
-          })
-        );
-      }
-      if (can('task.delete')) {
-        buttons.push(
-          h(UButton, {
-            size: 'xs',
-            variant: 'ghost',
-            color: 'error',
-            label: '删除',
-            onClick: () => confirmDelete(row.original),
-          })
-        );
-      }
-      if (buttons.length === 0) return null;
-      return h('div', { class: 'flex items-center gap-1' }, buttons);
-    },
   },
 ];
 </script>
@@ -392,7 +372,7 @@ const columns: TableColumn<Task>[] = [
           <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
           <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
             <template #body>
-              确定要删除吗，此操作无法撤销？
+              确定要删除吗，此操作无法撤销！
               <div class="flex justify-end gap-2">
                 <UButton label="取消" color="neutral" variant="subtle" @click="open = false" />
                 <UButton label="确定" color="error" variant="solid" loading-auto @click="deleteBatch" />
@@ -410,7 +390,27 @@ const columns: TableColumn<Task>[] = [
         :data="taskList"
         :columns="columns"
         class="flex-1"
-      />
+      >
+        <template #actions-cell="{ row }">
+          <div class="flex items-center gap-1">
+            <UButton
+              v-if="can('task.update')"
+              size="xs"
+              variant="ghost"
+              label="编辑"
+              @click="openEdit(row.original)"
+            />
+            <UButton
+              v-if="can('task.delete')"
+              size="xs"
+              variant="ghost"
+              color="error"
+              label="删除"
+              @click="confirmDelete(row.original)"
+            />
+          </div>
+        </template>
+      </UTable>
 
       <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
         <div class="text-sm text-muted" />
@@ -483,7 +483,7 @@ const columns: TableColumn<Task>[] = [
       <!-- 删除确认 -->
       <UModal v-model:open="deleteOpen" title="删除任务">
         <template #body>
-          确定要删除任务「{{ deleteTarget?.title }}」吗，此操作无法撤销？
+          确定要删除任务「{{ deleteTarget?.title }}」吗，此操作无法撤销！
           <div class="flex justify-end gap-2 mt-4">
             <UButton label="取消" color="neutral" variant="subtle" @click="deleteOpen = false" />
             <UButton label="确定" color="error" variant="solid" @click="doDelete" />
