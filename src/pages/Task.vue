@@ -144,13 +144,13 @@ async function submitForm() {
     const r = await updateTaskRequest({
       id: editTarget.value.id,
       ...form.value,
-      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + ' ' + formatTime(deadlineTime.value) + ':00' : undefined,
+      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
     });
     err = r.err;
   } else {
     const r = await createTaskRequest({
       ...form.value,
-      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + ' ' + formatTime(deadlineTime.value) + ':00' : undefined,
+      deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
     });
     err = r.err;
   }
@@ -234,13 +234,13 @@ const priorityLabel: Record<string, string> = {
   Urgent: '紧急',
 };
 
-function formatTime(d: Time | CalendarDateTime | undefined): string {
+function formatTime(d: any): string {
   if (!d) return '00:00';
   const pad = (n: number) => String(Math.floor(n || 0)).padStart(2, '0');
   return 'hour' in d ? pad(d.hour) + ':' + pad(d.minute) : '00:00';
 }
 
-function formatDate(d: CalendarDate | CalendarDateTime | undefined): string {
+function formatDate(d: any): string {
   if (!d) return '';
   const pad = (n: number) => String(Math.floor(n || 0)).padStart(2, '0');
   return d.year + '-' + pad(d.month) + '-' + pad(d.day);
@@ -383,6 +383,9 @@ const columns: TableColumn<Task>[] = [
             <button type="button" :class="viewMode === 'table' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'table'">表格</button>
             <button type="button" :class="viewMode === 'kanban' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'kanban'; fetchAllTasks()">看板</button>
           </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <UButton v-if="can('task.create')" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
           <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
           <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
             <template #body>
@@ -524,5 +527,6 @@ const columns: TableColumn<Task>[] = [
 </template>
 
 <style scoped></style>
+
 
 
