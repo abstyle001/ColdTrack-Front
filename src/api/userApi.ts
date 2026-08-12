@@ -376,11 +376,12 @@ async function getTaskRequest(id: number) {
   return err ? null : data;
 }
 
-async function fetchTaskPageRequest(pageNumber: number, pageSize: number, status?: string, priority?: string) {
+async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assigneeId?: string, status?: string, priority?: string) {
   const params: Record<string, string | number> = {
     number: pageNumber,
     size: pageSize,
   };
+  if (assigneeId) params.assigneeId = assigneeId;
   if (status) params.status = status;
   if (priority) params.priority = priority;
   const [err, data] = await request<Task[]>("/task/page", "GET", {
@@ -390,8 +391,9 @@ async function fetchTaskPageRequest(pageNumber: number, pageSize: number, status
   return err ? null : data;
 }
 
-async function fetchTaskCountRequest(status?: string, priority?: string) {
+async function fetchTaskCountRequest(assigneeId?: string, status?: string, priority?: string) {
   const params: Record<string, string> = {};
+  if (assigneeId) params.assigneeId = assigneeId;
   if (status) params.status = status;
   if (priority) params.priority = priority;
   const [err, data] = await request<number>("/task/count", "GET", {

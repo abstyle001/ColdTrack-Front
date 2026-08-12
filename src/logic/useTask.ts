@@ -9,7 +9,7 @@ import {
 } from "../api/userApi";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useTask(tableRef: any) {
+export function useTask(tableRef: any, assigneeId?: string) {
   const taskList = ref<Task[]>([]);
   const originalTaskList = ref<Task[]>([]);
   const taskCount = ref<number>(0);
@@ -30,6 +30,7 @@ export function useTask(tableRef: any) {
 
   async function fetchCount() {
     const data = await fetchTaskCountRequest(
+      assigneeId || undefined,
       statusFilter.value || undefined,
       priorityFilter.value || undefined
     );
@@ -47,6 +48,7 @@ export function useTask(tableRef: any) {
     const data = await fetchTaskPageRequest(
       number,
       pageSize.value,
+      assigneeId || undefined,
       statusFilter.value || undefined,
       priorityFilter.value || undefined
     );

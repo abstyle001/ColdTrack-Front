@@ -4,6 +4,7 @@ import type { Task } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { useTask } from '../logic/useTask';
 import { usePermission } from '../logic/usePermission';
+import { useUserStore } from '../store';
 import {
   createTaskRequest,
   updateTaskRequest,
@@ -11,6 +12,10 @@ import {
 } from '../api/userApi';
 
 const { can } = usePermission();
+const userStore = useUserStore();
+
+// Non-admin users only see tasks assigned to them
+const taskAssigneeId = userStore.isAdmin() ? undefined : userStore.user.id;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const table: any = useTemplateRef("table");
@@ -30,7 +35,7 @@ const {
   applyFilter,
   filter,
   deleteBatch,
-} = useTask(table);
+} = useTask(table, taskAssigneeId);
 
 const statusOptions = [
   { label: '待办', value: 'Todo' },
