@@ -46,6 +46,11 @@ const routes: Array<RouteRecordRaw> = [
         name: "settings",
         component: () => import("../pages/Settings.vue"),
       },
+      {
+        path: "/role-permission",
+        name: "role-permission",
+        component: () => import("../pages/RolePermission.vue"),
+      },
     ],
   },
   {

@@ -9,14 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@nuxt/ui-pro": "^3.3.0",
+    "@nuxt/ui": "^4.10.0",
     "@tailwindcss/vite": "^4.1.11",
     "@vueuse/core": "^13.6.0",
     "axios": "^1.11.0",
     "pinia": "^3.0.3",
     "tailwindcss": "^4.1.11",
     "vue": "^3.5.17",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.0",
@@ -24,5 +25,12 @@
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vue-tsc": "^2.2.12"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "11.8.0",
+      "onFail": "download"
+    }
   }
 }

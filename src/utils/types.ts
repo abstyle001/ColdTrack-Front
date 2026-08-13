@@ -1,4 +1,4 @@
-export const Status = {
+﻿export const Status = {
   OK: 200,
   UN_AUTHORIZED: 401,
   FORBIDDEN: 403,
@@ -10,19 +10,37 @@ export const Status = {
 interface Department {
   id: string;
   name: string;
-  description: string;
+  parentId: string;
+  level: number;
+  explain: string;
+  managerId: string;
+  managerName?: string;
+  workspace: string;
+  addition?: string;
   createdAt: string;
-  updatedAt: string;
+  children?: Department[];
+  depth?: number;
+}
+
+interface DepartmentTree extends Department {
+  children: DepartmentTree[];
 }
 
 interface Position {
-  id: string;
+  id: number;
   name: string;
-  description: string;
-  departmentId: string;
-  department?: Department;
+  duty: string;
+  workspace: string;
+  addition?: string;
   createdAt: string;
-  updatedAt: string;
+}
+
+interface UserPositionView {
+  positionId: number;
+  positionName: string;
+  positionDuty?: string;
+  departmentId?: string;
+  departmentName?: string;
 }
 
 interface User {
@@ -37,16 +55,16 @@ interface User {
 }
 
 interface Task {
-  id: string;
+  id: number;
   title: string;
   description: string;
   assigneeId: string;
-  assignee?: User;
+  assigneeName?: string;
   creatorId: string;
-  creator?: User;
-  status: 'todo' | 'in_progress' | 'review' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  deadline: string;
+  creatorName?: string;
+  status: 'Todo' | 'InProgress' | 'Review' | 'Completed';
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  deadline?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +74,46 @@ interface TokenClaim {
   email: string;
   userName: string;
   role: string;
+  roles: string[];
+  permissions: string[];
 }
 
-export type { User, Department, Position, Task, TokenClaim };
+interface Permission {
+  id: number;
+  key: string;
+  name: string;
+  group: string;
+  description?: string;
+}
+
+interface Role {
+  id: string;
+  name: string;
+  permissions: Permission[];
+}
+
+
+
+interface TaskStats {
+  total: number;
+  todoCount: number;
+  inProgressCount: number;
+  reviewCount: number;
+  completedCount: number;
+  overdueCount: number;
+  myTaskCount: number;
+}
+
+interface UserBrief {
+  id: string;
+  userName: string;
+  email: string;
+  nickName: string;
+  avatar?: string;
+  departmentNames: string[];
+  positionNames: string[];
+}
+export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim, Permission, Role };
+
+export type { TaskStats };
+

@@ -1,5 +1,10 @@
-<script setup lang="ts">
-import { ref } from 'vue';
+﻿<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { fetchTaskStatsRequest } from '../api/userApi';
+import { usePermission } from '../logic/usePermission';
+import type { TaskStats } from '../utils/types';
+
+const { can } = usePermission();
 
 const cards = ref([
   {
@@ -10,7 +15,7 @@ const cards = ref([
   },
   {
     title: '职位',
-    description: '职位列表，从属部门，职责描述，任职要求，职位创建。',
+    description: '职位列表，隶属部门，职责描述，任职要求，职位创建。',
     icon: 'i-material-symbols:work',
     to: '/position'
   },
@@ -38,7 +43,38 @@ const cards = ref([
     icon: 'i-material-symbols:settings',
     to: '/settings'
   }
-])
+]);
+
+const stats = ref<TaskStats>({
+  total: 0, todoCount: 0, inProgressCount: 0,
+  reviewCount: 0, completedCount: 0, overdueCount: 0, myTaskCount: 0,
+});
+const statsLoading = ref(true);
+const statsLoaded = ref(false);
+
+async function loadStats() {
+  if (statsLoaded.value) return;
+  statsLoading.value = true;
+  const data = await fetchTaskStatsRequest();
+  if (data) stats.value = data;
+  statsLoading.value = false;
+  statsLoaded.value = true;
+}
+
+const statCards = computed(() => [
+  { label: '待办', value: stats.value.todoCount, icon: 'i-lucide-circle', color: 'text-muted' },
+  { label: '进行中', value: stats.value.inProgressCount, icon: 'i-lucide-play-circle', color: 'text-info' },
+  { label: '审核', value: stats.value.reviewCount, icon: 'i-lucide-eye', color: 'text-warning' },
+  { label: '已完成', value: stats.value.completedCount, icon: 'i-lucide-check-circle', color: 'text-success' },
+  { label: '已逾期', value: stats.value.overdueCount, icon: 'i-lucide-alert-circle', color: 'text-error' },
+  { label: '我的待办', value: stats.value.myTaskCount, icon: 'i-lucide-user', color: 'text-primary' },
+]);
+
+watch(
+  () => can('task.read'),
+  (has) => { if (has) loadStats(); },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -54,7 +90,26 @@ const cards = ref([
     <UPageGrid>
       <UPageCard v-for="(card, index) in cards" :key="index" v-bind="card" spotlight />
     </UPageGrid>
+
+    <!-- 实时统计大盘 -->
+    <div v-if="can('task.read') && !statsLoading" class="mt-6">
+      <div class="mb-3 text-sm font-medium text-muted">任务概览</div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div v-for="s in statCards" :key="s.label"
+          class="flex items-center gap-3 rounded-lg border border-default bg-elevated/50 p-4">
+          <UIcon :name="s.icon" class="size-5 shrink-0" :class="s.color" />
+          <div class="min-w-0">
+            <div class="text-xl font-semibold tabular-nums">{{ s.value }}</div>
+            <div class="text-xs text-muted truncate">{{ s.label }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-else-if="can('task.read')" class="mt-6 flex justify-center py-8 text-muted text-sm">
+      加载中...
+    </div>
   </DashboardPanel>
 </template>
 
 <style scoped></style>
+

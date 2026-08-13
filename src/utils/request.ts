@@ -1,4 +1,4 @@
-import axios, {
+﻿import axios, {
   AxiosError,
   type AxiosResponse,
 } from "axios";
@@ -6,7 +6,7 @@ import { Status } from "./types";
 
 const API_BASE_URL = "/api";
 
-export type Method = "GET" | "POST" | "PUT" | "DELETE";
+export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 interface Options {
   token?: string;
