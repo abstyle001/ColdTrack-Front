@@ -455,6 +455,14 @@ async function updateTaskStatusRequest(id: number, status: string) {
   return { err, data };
 }
 
+async function updateTaskStatusBatchRequest(ids: number[], status: string) {
+  const [err, data] = await request<Task[]>("/task/batch/status", "PATCH", {
+    token: token.value,
+    body: { ids, status },
+  });
+  return { err, data };
+}
+
 
 async function fetchTaskStatsRequest() {
   const [err, data] = await request<TaskStats>("/task/stats", "GET", {
@@ -518,6 +526,7 @@ export {
   deleteTaskRequest,
   deleteTaskBatchRequest,
   updateTaskStatusRequest,
+  updateTaskStatusBatchRequest,
   fetchTaskStatsRequest,
   fetchUserBriefRequest,
 };

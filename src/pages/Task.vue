@@ -39,6 +39,7 @@ const {
   applyFilter,
   filter,
   deleteBatch,
+  batchUpdateStatus,
 } = useTask(table, taskAssigneeId);
 
 const statusOptions = [
@@ -85,6 +86,7 @@ const form = ref<{
 const deadlineDate = ref<CalendarDate | undefined>(undefined);
 const deadlineTime = ref<Time | undefined>(undefined);
 const popoverOpen = ref(false);
+const batchStatusOpen = ref(false);
 
 function openCreate() {
   editTarget.value = null;
@@ -267,6 +269,12 @@ async function fetchAllTasks() {
   kanbanLoading.value = false;
 }
 
+async function handleKanbanStatusChanged() {
+  await fetchAllTasks();
+  await fetchList(page.value);
+  await fetchCount();
+}
+
 
 const columns: TableColumn<Task>[] = [
   {
@@ -386,6 +394,21 @@ const columns: TableColumn<Task>[] = [
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
           <UButton v-if="can('task.create')" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
+          <UPopover v-if="can('task.update') && viewMode === 'table'" v-model:open="batchStatusOpen">
+            <UButton variant="outline" label="批量改状态" icon="i-lucide-list-checks" />
+            <template #content>
+              <div class="flex flex-col gap-1 p-2">
+                <UButton
+                  v-for="opt in statusOptions"
+                  :key="opt.value"
+                  variant="ghost"
+                  :label="opt.label"
+                  class="justify-start"
+                  @click="batchUpdateStatus(opt.value); batchStatusOpen = false"
+                />
+              </div>
+            </template>
+          </UPopover>
           <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
           <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
             <template #body>
@@ -441,7 +464,7 @@ const columns: TableColumn<Task>[] = [
 
       <div v-if="viewMode === 'kanban'" class="flex-1">
         <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">加载中...</div>
-        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" @edit="openEdit" @delete="confirmDelete" @statusChanged="fetchAllTasks" />
+        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" @edit="openEdit" @delete="confirmDelete" @statusChanged="handleKanbanStatusChanged" />
       </div>
 
       <!-- 新建 / 编辑任务 -->
@@ -527,6 +550,8 @@ const columns: TableColumn<Task>[] = [
 </template>
 
 <style scoped></style>
+
+
 
 
 

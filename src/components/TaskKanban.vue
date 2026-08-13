@@ -67,8 +67,8 @@ async function onDrop(e: DragEvent, targetStatus: string) {
   if (!task || task.status === targetStatus) return;
 
   const result = await updateTaskStatusRequest(taskId, targetStatus);
+  const toast = useToast();
   if (result.err) {
-    const toast = useToast();
     toast.add({
       title: '状态更新失败',
       description: result.err,
@@ -77,6 +77,12 @@ async function onDrop(e: DragEvent, targetStatus: string) {
     });
     return;
   }
+  toast.add({
+    title: '状态更新成功',
+    description: '任务状态已更新',
+    icon: 'i-material-symbols:check-circle-outline',
+    color: 'success',
+  });
   emit('statusChanged');
 }
 
@@ -178,3 +184,4 @@ function countByStatus(key: string) {
   overflow: hidden;
 }
 </style>
+

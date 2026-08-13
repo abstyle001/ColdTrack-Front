@@ -1,10 +1,11 @@
-import { onMounted, ref } from "vue";
+﻿import { onMounted, ref } from "vue";
 import type { Task, User } from "../utils/types";
 import type { AcceptableValue } from "@nuxt/ui";
 import {
   fetchTaskPageRequest,
   fetchTaskCountRequest,
   deleteTaskBatchRequest,
+  updateTaskStatusBatchRequest,
   fetchUserListRequest,
 } from "../api/userApi";
 
@@ -84,7 +85,7 @@ export function useTask(tableRef: any, assigneeId?: string) {
     );
   }
 
-  async function deleteBatch() {
+  function getSelectedIds(): number[] | null {
     const selectedRows = tableRef.value?.tableApi.getSelectedRowModel().rows;
     if (selectedRows === undefined || selectedRows.length === 0) {
       toast.add({
@@ -93,13 +94,21 @@ export function useTask(tableRef: any, assigneeId?: string) {
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
-      return;
+      return null;
     }
+
     const selectedIds: number[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     selectedRows.forEach((row: any) => {
       selectedIds.push(row.original.id);
     });
+    return selectedIds;
+  }
+
+  async function deleteBatch() {
+    const selectedIds = getSelectedIds();
+    if (!selectedIds) return;
+
     const err = await deleteTaskBatchRequest(selectedIds);
     if (err) {
       toast.add({
@@ -110,6 +119,7 @@ export function useTask(tableRef: any, assigneeId?: string) {
       });
       return;
     }
+
     toast.add({
       title: "删除成功",
       description: `成功删除${selectedIds.length}条记录`,
@@ -118,8 +128,44 @@ export function useTask(tableRef: any, assigneeId?: string) {
     });
     open.value = false;
     taskList.value = taskList.value.filter((t) => !selectedIds.includes(t.id));
-    originalTaskList.value = originalTaskList.value.filter((t) => !selectedIds.includes(t.id));
+    originalTaskList.value = originalTaskList.value.filter(
+      (t) => !selectedIds.includes(t.id)
+    );
     tableRef.value?.tableApi.resetRowSelection();
+  }
+
+  async function batchUpdateStatus(status: string) {
+    const selectedIds = getSelectedIds();
+    if (!selectedIds) return;
+
+    const result = await updateTaskStatusBatchRequest(selectedIds, status);
+    if (result.err) {
+      toast.add({
+        title: "状态更新失败",
+        description: result.err,
+        icon: "i-material-symbols:error-circle-rounded-outline-sharp",
+        color: "error",
+      });
+      return;
+    }
+
+    const updatedIds = new Set((result.data ?? []).map((t) => t.id));
+    const nextStatus = status;
+    taskList.value = taskList.value.map((task) =>
+      updatedIds.has(task.id) ? { ...task, status: nextStatus as Task["status"] } : task
+    );
+    originalTaskList.value = originalTaskList.value.map((task) =>
+      updatedIds.has(task.id) ? { ...task, status: nextStatus as Task["status"] } : task
+    );
+
+    toast.add({
+      title: "状态更新成功",
+      description: `已更新${updatedIds.size}条任务`,
+      icon: "i-material-symbols:check-circle-outline",
+      color: "success",
+    });
+    tableRef.value?.tableApi.resetRowSelection();
+    await fetchCount();
   }
 
   onMounted(async () => {
@@ -144,5 +190,6 @@ export function useTask(tableRef: any, assigneeId?: string) {
     clearFilter,
     filter,
     deleteBatch,
+    batchUpdateStatus,
   };
 }
