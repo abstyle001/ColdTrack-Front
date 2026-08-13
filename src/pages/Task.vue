@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { h, ref, resolveComponent, useTemplateRef, computed } from 'vue';
 import { parseDateTime, toCalendarDate, toTime } from '@internationalized/date';
-import type { CalendarDateTime, CalendarDate, Time } from '@internationalized/date';
+import type { CalendarDateTime } from '@internationalized/date';
 import type { Task } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { useTask } from '../logic/useTask';
@@ -83,8 +83,10 @@ const form = ref<{
   deadline: '',
 });
 
-const deadlineDate = ref<CalendarDate | undefined>(undefined);
-const deadlineTime = ref<Time | undefined>(undefined);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const deadlineDate: any = ref(undefined);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const deadlineTime: any = ref(undefined);
 const popoverOpen = ref(false);
 const batchStatusOpen = ref(false);
 
