@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue';
 import type { Task } from '../utils/types';
 import { updateTaskStatusRequest } from '../api/userApi';
@@ -12,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'edit', task: Task): void;
   (e: 'delete', task: Task): void;
+  (e: 'detail', task: Task): void;
   (e: 'statusChanged'): void;
 }>();
 
@@ -127,6 +128,15 @@ function countByStatus(key: string) {
           <div class="flex items-start justify-between gap-1.5 mb-1.5">
             <span class="text-sm font-medium leading-snug line-clamp-2">{{ task.title }}</span>
             <div class="flex items-center gap-0.5 shrink-0">
+              <UButton
+                icon="i-lucide-eye"
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                class="size-6"
+                aria-label="查看详情"
+                @click.stop="emit('detail', task)"
+              />
               <UButton
                 v-if="canUpdate"
                 icon="i-lucide-pencil"
