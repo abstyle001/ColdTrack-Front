@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { h, ref, resolveComponent, useTemplateRef, computed } from 'vue';
 import { parseDateTime, toCalendarDate, toTime } from '@internationalized/date';
 import type { CalendarDateTime } from '@internationalized/date';
@@ -8,6 +8,7 @@ import { useTask } from '../logic/useTask';
 import { usePermission } from '../logic/usePermission';
 import { useUserStore } from '../store';
 import TaskKanban from '../components/TaskKanban.vue';
+import TaskDetailDrawer from '../components/TaskDetailDrawer.vue';
 import { fetchTaskListRequest } from '../api/userApi';
 import {
   createTaskRequest,
@@ -89,6 +90,15 @@ const deadlineDate: any = ref(undefined);
 const deadlineTime: any = ref(undefined);
 const popoverOpen = ref(false);
 const batchStatusOpen = ref(false);
+
+// ===== 任务详情抽屉（带评论区） =====
+const detailOpen = ref(false);
+const detailTask = ref<Task | null>(null);
+
+function openDetail(task: Task) {
+  detailTask.value = task;
+  detailOpen.value = true;
+}
 
 function openCreate() {
   editTarget.value = null;
@@ -437,6 +447,13 @@ const columns: TableColumn<Task>[] = [
         <template #actions-cell="{ row }">
           <div class="flex items-center gap-1">
             <UButton
+              size="xs"
+              variant="ghost"
+              label="详情"
+              icon="i-lucide-eye"
+              @click="openDetail(row.original)"
+            />
+            <UButton
               v-if="can('task.update')"
               size="xs"
               variant="ghost"
@@ -466,7 +483,7 @@ const columns: TableColumn<Task>[] = [
 
       <div v-if="viewMode === 'kanban'" class="flex-1">
         <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">加载中...</div>
-        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" @edit="openEdit" @delete="confirmDelete" @statusChanged="handleKanbanStatusChanged" />
+        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" @edit="openEdit" @delete="confirmDelete" @detail="openDetail" @statusChanged="handleKanbanStatusChanged" />
       </div>
 
       <!-- 新建 / 编辑任务 -->
@@ -540,6 +557,9 @@ const columns: TableColumn<Task>[] = [
           </div>
         </template>
       </UModal>
+
+      <!-- 任务详情抽屉（带评论区） -->
+      <TaskDetailDrawer v-model:open="detailOpen" :task="detailTask" />
     </template>
 
     <template v-else>

@@ -1,4 +1,4 @@
-﻿import { token } from "../utils/useStorage";
+import { token } from "../utils/useStorage";
 import request from "../utils/request";
 import type { TaskStats,
   TokenClaim,
@@ -11,6 +11,7 @@ import type { TaskStats,
   Role,
   UserBrief,
   Task,
+  TaskComment,
 } from "../utils/types";
 
 async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
@@ -471,6 +472,22 @@ async function fetchTaskStatsRequest() {
   return err ? null : data;
 }
 
+// ============ 任务评论 TaskComment ============
+async function fetchTaskCommentsRequest(taskId: number) {
+  const [err, data] = await request<TaskComment[]>(`/task/${taskId}/comments`, "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function createTaskCommentRequest(taskId: number, content: string) {
+  const [err, data] = await request<TaskComment>(`/task/${taskId}/comments`, "POST", {
+    token: token.value,
+    body: { content },
+  });
+  return { err, data };
+}
+
 async function fetchUserBriefRequest(includeAdmin: boolean = false) {
   const [err, data] = await request<UserBrief[]>(`/user/brief?includeAdmin=${includeAdmin}`, "GET", {
     token: token.value,
@@ -528,6 +545,8 @@ export {
   updateTaskStatusRequest,
   updateTaskStatusBatchRequest,
   fetchTaskStatsRequest,
+  fetchTaskCommentsRequest,
+  createTaskCommentRequest,
   fetchUserBriefRequest,
 };
 

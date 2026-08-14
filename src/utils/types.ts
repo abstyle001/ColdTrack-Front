@@ -1,4 +1,4 @@
-﻿export const Status = {
+export const Status = {
   OK: 200,
   UN_AUTHORIZED: 401,
   FORBIDDEN: 403,
@@ -94,6 +94,16 @@ interface Role {
 
 
 
+interface TaskComment {
+  id: number;
+  taskId: number;
+  content: string;
+  authorId?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  createdAt: string;
+}
+
 interface TaskStats {
   total: number;
   todoCount: number;
@@ -113,7 +123,7 @@ interface UserBrief {
   departmentNames: string[];
   positionNames: string[];
 }
-export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TokenClaim, Permission, Role };
+export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TaskComment, TokenClaim, Permission, Role };
 
 export type { TaskStats };
 
