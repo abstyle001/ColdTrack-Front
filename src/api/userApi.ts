@@ -12,6 +12,7 @@ import type { TaskStats,
   UserBrief,
   Task,
   TaskComment,
+  Tag,
 } from "../utils/types";
 
 async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
@@ -377,7 +378,7 @@ async function getTaskRequest(id: number) {
   return err ? null : data;
 }
 
-async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assigneeId?: string, status?: string, priority?: string) {
+async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assigneeId?: string, status?: string, priority?: string, tagId?: string) {
   const params: Record<string, string | number> = {
     number: pageNumber,
     size: pageSize,
@@ -385,6 +386,7 @@ async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assign
   if (assigneeId) params.assigneeId = assigneeId;
   if (status) params.status = status;
   if (priority) params.priority = priority;
+  if (tagId) params.tagId = tagId;
   const [err, data] = await request<Task[]>("/task/page", "GET", {
     token: token.value,
     body: params,
@@ -392,11 +394,12 @@ async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assign
   return err ? null : data;
 }
 
-async function fetchTaskCountRequest(assigneeId?: string, status?: string, priority?: string) {
+async function fetchTaskCountRequest(assigneeId?: string, status?: string, priority?: string, tagId?: string) {
   const params: Record<string, string> = {};
   if (assigneeId) params.assigneeId = assigneeId;
   if (status) params.status = status;
   if (priority) params.priority = priority;
+  if (tagId) params.tagId = tagId;
   const [err, data] = await request<number>("/task/count", "GET", {
     token: token.value,
     body: params,
@@ -404,7 +407,7 @@ async function fetchTaskCountRequest(assigneeId?: string, status?: string, prior
   return err ? null : data;
 }
 
-async function createTaskRequest(task: Partial<Task>) {
+async function createTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
   const [err, data] = await request<Task>("/task", "POST", {
     token: token.value,
     body: {
@@ -413,12 +416,13 @@ async function createTaskRequest(task: Partial<Task>) {
       assigneeId: task.assigneeId,
       priority: task.priority,
       deadline: task.deadline,
+      tagIds: task.tagIds,
     },
   });
   return { err, data };
 }
 
-async function updateTaskRequest(task: Partial<Task>) {
+async function updateTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
   const [err, data] = await request<Task>(`/task/${task.id}`, "PUT", {
     token: token.value,
     body: {
@@ -428,6 +432,7 @@ async function updateTaskRequest(task: Partial<Task>) {
       status: task.status,
       priority: task.priority,
       deadline: task.deadline,
+      tagIds: task.tagIds,
     },
   });
   return { err, data };
@@ -486,6 +491,37 @@ async function createTaskCommentRequest(taskId: number, content: string) {
     body: { content },
   });
   return { err, data };
+}
+
+// ============ 标签 Tag ============
+async function fetchTagListRequest() {
+  const [err, data] = await request<Tag[]>("/tag", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function createTagRequest(tag: { name: string; color?: string }) {
+  const [err, data] = await request<Tag>("/tag", "POST", {
+    token: token.value,
+    body: tag,
+  });
+  return { err, data };
+}
+
+async function updateTagRequest(id: number, tag: { name?: string; color?: string }) {
+  const [err, data] = await request<Tag>(`/tag/${id}`, "PUT", {
+    token: token.value,
+    body: tag,
+  });
+  return { err, data };
+}
+
+async function deleteTagRequest(id: number) {
+  const [err] = await request<void>(`/tag/${id}`, "DELETE", {
+    token: token.value,
+  });
+  return err;
 }
 
 async function fetchUserBriefRequest(includeAdmin: boolean = false) {
@@ -547,6 +583,10 @@ export {
   fetchTaskStatsRequest,
   fetchTaskCommentsRequest,
   createTaskCommentRequest,
+  fetchTagListRequest,
+  createTagRequest,
+  updateTagRequest,
+  deleteTagRequest,
   fetchUserBriefRequest,
 };
 

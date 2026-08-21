@@ -1,5 +1,5 @@
 ﻿import { onMounted, ref } from "vue";
-import type { Task, User } from "../utils/types";
+import type { Task, User, Tag } from "../utils/types";
 import type { AcceptableValue } from "@nuxt/ui";
 import {
   fetchTaskPageRequest,
@@ -7,6 +7,7 @@ import {
   deleteTaskBatchRequest,
   updateTaskStatusBatchRequest,
   fetchUserListRequest,
+  fetchTagListRequest,
 } from "../api/userApi";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,19 +22,27 @@ export function useTask(tableRef: any, assigneeId?: string) {
 
   const statusFilter = ref<string>("");
   const priorityFilter = ref<string>("");
+  const tagFilter = ref<string>("");
 
   const userList = ref<User[]>([]);
+  const tagList = ref<Tag[]>([]);
 
   async function fetchUsers() {
     const data = await fetchUserListRequest();
     if (data) userList.value = data;
   }
 
+  async function fetchTags() {
+    const data = await fetchTagListRequest();
+    if (data) tagList.value = data;
+  }
+
   async function fetchCount() {
     const data = await fetchTaskCountRequest(
       assigneeId || undefined,
       statusFilter.value || undefined,
-      priorityFilter.value || undefined
+      priorityFilter.value || undefined,
+      tagFilter.value || undefined
     );
     if (data !== null) {
       taskCount.value = data;
@@ -51,7 +60,8 @@ export function useTask(tableRef: any, assigneeId?: string) {
       pageSize.value,
       assigneeId || undefined,
       statusFilter.value || undefined,
-      priorityFilter.value || undefined
+      priorityFilter.value || undefined,
+      tagFilter.value || undefined
     );
     if (data) {
       taskList.value = data;
@@ -68,6 +78,7 @@ export function useTask(tableRef: any, assigneeId?: string) {
   async function clearFilter() {
     statusFilter.value = "";
     priorityFilter.value = "";
+    tagFilter.value = "";
     await fetchCount();
     await fetchList(1);
   }
@@ -170,6 +181,7 @@ export function useTask(tableRef: any, assigneeId?: string) {
 
   onMounted(async () => {
     await fetchUsers();
+    await fetchTags();
     await fetchCount();
     await fetchList();
   });
@@ -182,7 +194,10 @@ export function useTask(tableRef: any, assigneeId?: string) {
     open,
     statusFilter,
     priorityFilter,
+    tagFilter,
     userList,
+    tagList,
+    fetchTags,
     fetchCount,
     updatePage,
     fetchList,

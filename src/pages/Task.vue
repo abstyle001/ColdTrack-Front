@@ -2,7 +2,7 @@
 import { h, ref, resolveComponent, useTemplateRef, computed } from 'vue';
 import { parseDateTime, toCalendarDate, toTime } from '@internationalized/date';
 import type { CalendarDateTime } from '@internationalized/date';
-import type { Task } from '../utils/types';
+import type { Task, Tag } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { useTask } from '../logic/useTask';
 import { usePermission } from '../logic/usePermission';
@@ -14,6 +14,9 @@ import {
   createTaskRequest,
   updateTaskRequest,
   deleteTaskRequest,
+  createTagRequest,
+  updateTagRequest,
+  deleteTagRequest,
 } from '../api/userApi';
 
 const { can } = usePermission();
@@ -33,10 +36,13 @@ const {
   open,
   statusFilter,
   priorityFilter,
+  tagFilter,
+  tagList,
   userList,
   updatePage,
   fetchList,
   fetchCount,
+  fetchTags,
   applyFilter,
   filter,
   deleteBatch,
@@ -60,6 +66,20 @@ const priorityOptions = [
 const userOptions = computed(() =>
   userList.value.map((u) => ({ label: u.nickName || u.userName, value: u.id }))
 );
+
+const tagOptions = computed(() =>
+  tagList.value.map((t) => ({ label: t.name, value: String(t.id) }))
+);
+
+const tagColorOptions = [
+  { label: '默认', value: '' },
+  { label: '主色', value: 'primary' },
+  { label: '中性', value: 'neutral' },
+  { label: '信息', value: 'info' },
+  { label: '成功', value: 'success' },
+  { label: '警告', value: 'warning' },
+  { label: '错误', value: 'error' },
+];
 
 // ===== 创建 / 编辑弹窗 =====
 const formOpen = ref(false);
@@ -91,6 +111,16 @@ const deadlineTime: any = ref(undefined);
 const popoverOpen = ref(false);
 const batchStatusOpen = ref(false);
 
+// ===== 标签选择与管理 =====
+const selectedTagIds = ref<number[]>([]);
+const tagManageOpen = ref(false);
+const newTagName = ref('');
+const newTagColor = ref('');
+const editingTagId = ref<number | null>(null);
+const editingTagName = ref('');
+const editingTagColor = ref('');
+const tagSaving = ref(false);
+
 // ===== 任务详情抽屉（带评论区） =====
 const detailOpen = ref(false);
 const detailTask = ref<Task | null>(null);
@@ -113,6 +143,7 @@ function openCreate() {
   deadlineDate.value = undefined;
   deadlineTime.value = undefined;
   popoverOpen.value = false;
+  selectedTagIds.value = [];
   formOpen.value = true;
 }
 
@@ -135,6 +166,7 @@ function openEdit(task: Task) {
     deadlineDate.value = undefined;
     deadlineTime.value = undefined;
   }
+  selectedTagIds.value = (task.tags ?? []).map((t) => t.id);
   popoverOpen.value = false;
   formOpen.value = true;
 }
@@ -159,12 +191,14 @@ async function submitForm() {
       id: editTarget.value.id,
       ...form.value,
       deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
+      tagIds: selectedTagIds.value,
     });
     err = r.err;
   } else {
     const r = await createTaskRequest({
       ...form.value,
       deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
+      tagIds: selectedTagIds.value,
     });
     err = r.err;
   }
@@ -287,6 +321,71 @@ async function handleKanbanStatusChanged() {
   await fetchCount();
 }
 
+// ===== 标签管理 =====
+function openTagManage() {
+  newTagName.value = '';
+  newTagColor.value = '';
+  editingTagId.value = null;
+  editingTagName.value = '';
+  editingTagColor.value = '';
+  tagManageOpen.value = true;
+}
+
+async function addTag() {
+  const name = newTagName.value.trim();
+  if (!name || tagSaving.value) return;
+  tagSaving.value = true;
+  const r = await createTagRequest({ name, color: newTagColor.value || undefined });
+  tagSaving.value = false;
+  if (r.err) {
+    toast.add({ title: '创建失败', description: r.err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    return;
+  }
+  toast.add({ title: '创建成功', description: '标签已创建', icon: 'i-material-symbols:check-circle-outline', color: 'success' });
+  newTagName.value = '';
+  newTagColor.value = '';
+  fetchTags();
+}
+
+function startEditTag(tag: Tag) {
+  editingTagId.value = tag.id;
+  editingTagName.value = tag.name;
+  editingTagColor.value = tag.color || '';
+}
+
+async function saveEditTag() {
+  if (editingTagId.value === null || tagSaving.value) return;
+  const name = editingTagName.value.trim();
+  if (!name) {
+    toast.add({ title: '更新失败', description: '标签名称不能为空', icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    return;
+  }
+  tagSaving.value = true;
+  const r = await updateTagRequest(editingTagId.value, { name, color: editingTagColor.value || undefined });
+  tagSaving.value = false;
+  if (r.err) {
+    toast.add({ title: '更新失败', description: r.err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    return;
+  }
+  toast.add({ title: '更新成功', description: '标签已更新', icon: 'i-material-symbols:check-circle-outline', color: 'success' });
+  editingTagId.value = null;
+  fetchTags();
+}
+
+async function removeTag(id: number) {
+  if (tagSaving.value) return;
+  tagSaving.value = true;
+  const err = await deleteTagRequest(id);
+  tagSaving.value = false;
+  if (err) {
+    toast.add({ title: '删除失败', description: err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    return;
+  }
+  toast.add({ title: '删除成功', description: '标签已删除', icon: 'i-material-symbols:check-circle-outline', color: 'success' });
+  if (editingTagId.value === id) editingTagId.value = null;
+  fetchTags();
+}
+
 
 const columns: TableColumn<Task>[] = [
   {
@@ -340,6 +439,16 @@ const columns: TableColumn<Task>[] = [
         variant: 'soft',
         size: 'xs',
       });
+    },
+  },
+  {
+    id: 'tags',
+    header: '标签',
+    cell: ({ row }) => {
+      const tags = row.original.tags ?? [];
+      if (tags.length === 0) return h('span', { class: 'text-muted' }, '—');
+      return h('div', { class: 'flex flex-wrap gap-1' },
+        tags.map((tag) => h(UBadge, { label: tag.name, color: tag.color || 'neutral', variant: 'soft', size: 'xs' })));
     },
   },
   {
@@ -399,6 +508,13 @@ const columns: TableColumn<Task>[] = [
             class="w-32"
             @update:model-value="applyFilter()"
           />
+          <USelect
+            v-model="tagFilter"
+            :items="tagOptions"
+            placeholder="按标签筛选"
+            class="w-32"
+            @update:model-value="applyFilter()"
+          />
           <div class="inline-flex rounded-md border border-default overflow-hidden ml-2">
             <button type="button" :class="viewMode === 'table' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'table'">表格</button>
             <button type="button" :class="viewMode === 'kanban' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'kanban'; fetchAllTasks()">看板</button>
@@ -406,6 +522,7 @@ const columns: TableColumn<Task>[] = [
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
           <UButton v-if="can('task.create')" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
+          <UButton v-if="can('tag.create')" label="管理标签" icon="i-lucide-tag" variant="outline" @click="openTagManage" />
           <UPopover v-if="can('task.update') && viewMode === 'table'" v-model:open="batchStatusOpen">
             <UButton variant="outline" label="批量改状态" icon="i-lucide-list-checks" />
             <template #content>
@@ -513,6 +630,20 @@ const columns: TableColumn<Task>[] = [
                 />
               </UFormField>
             </div>
+            <UFormField label="标签">
+              <div v-if="tagList.length === 0" class="text-sm text-muted">
+                暂无标签，可先在「管理标签」中创建
+              </div>
+              <div v-else class="flex flex-col gap-1 max-h-40 overflow-auto rounded-md border border-default p-2">
+                <UCheckbox
+                  v-for="tag in tagList"
+                  :key="tag.id"
+                  :model-value="selectedTagIds.includes(tag.id)"
+                  :label="tag.name"
+                  @update:model-value="(v: boolean | 'indeterminate') => v ? selectedTagIds.includes(tag.id) || selectedTagIds.push(tag.id) : selectedTagIds = selectedTagIds.filter(id => id !== tag.id)"
+                />
+              </div>
+            </UFormField>
             <div class="flex gap-3">
               <UFormField label="截止日期">
                 <UInputDate v-model="deadlineDate">
@@ -554,6 +685,42 @@ const columns: TableColumn<Task>[] = [
           <div class="flex justify-end gap-2 mt-4">
             <UButton label="取消" color="neutral" variant="subtle" @click="deleteOpen = false" />
             <UButton label="确定" color="error" variant="solid" @click="doDelete" />
+          </div>
+        </template>
+      </UModal>
+
+      <!-- 管理标签 -->
+      <UModal v-model:open="tagManageOpen" title="管理标签" size="md">
+        <template #body>
+          <div class="flex flex-col gap-3">
+            <div v-if="tagList.length === 0" class="text-sm text-muted">暂无标签</div>
+            <div class="flex flex-col gap-2 max-h-64 overflow-auto">
+              <div v-for="tag in tagList" :key="tag.id" class="flex items-center gap-2">
+                <template v-if="editingTagId === tag.id">
+                  <UInput v-model="editingTagName" class="flex-1" placeholder="标签名称" />
+                  <USelect v-model="editingTagColor" :items="tagColorOptions" class="w-28" />
+                  <UButton size="xs" color="primary" icon="i-lucide-check" aria-label="保存" @click="saveEditTag" />
+                  <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" aria-label="取消" @click="editingTagId = null" />
+                </template>
+                <template v-else>
+                  <UBadge :label="tag.name" :color="tag.color || 'neutral'" variant="soft" size="sm" />
+                  <div class="flex-1" />
+                  <UButton v-if="can('tag.update')" size="xs" variant="ghost" color="neutral" icon="i-lucide-pencil" aria-label="重命名" @click="startEditTag(tag)" />
+                  <UButton v-if="can('tag.delete')" size="xs" variant="ghost" color="error" icon="i-lucide-trash" aria-label="删除" @click="removeTag(tag.id)" />
+                </template>
+              </div>
+            </div>
+            <USeparator />
+            <div v-if="can('tag.create')" class="flex items-center gap-2">
+              <UInput v-model="newTagName" class="flex-1" placeholder="新标签名称" />
+              <USelect v-model="newTagColor" :items="tagColorOptions" class="w-28" />
+              <UButton size="sm" color="primary" label="添加" :loading="tagSaving" @click="addTag" />
+            </div>
+          </div>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton label="关闭" color="neutral" variant="subtle" @click="tagManageOpen = false" />
           </div>
         </template>
       </UModal>

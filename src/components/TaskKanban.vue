@@ -169,6 +169,16 @@ function countByStatus(key: string) {
               {{ task.deadline.slice(0, 10) }}
             </span>
           </div>
+          <div v-if="task.tags && task.tags.length" class="flex flex-wrap gap-1 mb-1.5">
+            <UBadge
+              v-for="tag in task.tags"
+              :key="tag.id"
+              :label="tag.name"
+              :color="tag.color || 'neutral'"
+              variant="soft"
+              size="xs"
+            />
+          </div>
           <div v-if="task.assigneeName" class="flex items-center gap-1 text-xs text-muted">
             <UIcon name="i-lucide-user" class="size-3" />
             {{ task.assigneeName }}

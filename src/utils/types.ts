@@ -67,6 +67,14 @@ interface Task {
   deadline?: string;
   createdAt: string;
   updatedAt: string;
+  tags?: Tag[];
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  color?: string;
+  createdAt: string;
 }
 
 interface TokenClaim {
@@ -123,7 +131,7 @@ interface UserBrief {
   departmentNames: string[];
   positionNames: string[];
 }
-export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TaskComment, TokenClaim, Permission, Role };
+export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TaskComment, TokenClaim, Permission, Role, Tag };
 
 export type { TaskStats };
 

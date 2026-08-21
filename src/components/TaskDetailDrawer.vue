@@ -119,6 +119,18 @@ async function submitComment() {
           />
         </div>
 
+        <!-- 标签 -->
+        <div v-if="task.tags && task.tags.length" class="flex flex-wrap items-center gap-1.5">
+          <UBadge
+            v-for="tag in task.tags"
+            :key="tag.id"
+            :label="tag.name"
+            :color="tag.color || 'neutral'"
+            variant="soft"
+            size="sm"
+          />
+        </div>
+
         <!-- 任务描述 -->
         <div v-if="task.description">
           <p class="text-xs text-muted mb-1.5">任务描述</p>
