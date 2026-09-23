@@ -123,6 +123,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     e.preventDefault();
     token.value = '';
     loginStatus.value = false;
+    userStore.reset();
     router.replace('/login');
   }
 }]]))

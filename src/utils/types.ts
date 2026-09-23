@@ -58,6 +58,8 @@ interface Task {
   id: number;
   title: string;
   description: string;
+  projectId: number;
+  projectName: string;
   assigneeId: string;
   assigneeName?: string;
   creatorId: string;
@@ -131,7 +133,51 @@ interface UserBrief {
   departmentNames: string[];
   positionNames: string[];
 }
-export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TaskComment, TokenClaim, Permission, Role, Tag };
+
+interface ProjectMemberBrief {
+  id: string;
+  userName: string;
+  email: string;
+  nickName: string;
+  avatar: string | null;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  description: string | null;
+  managerId: string | null;
+  managerName: string | null;
+  status: 'InProgress' | 'Completed' | 'Archived';
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  memberCount: number;
+  taskCount: number;
+  members: ProjectMemberBrief[];
+}
+
+interface CreateProjectPayload {
+  name: string;
+  description?: string;
+  managerId: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  memberIds?: string[];
+}
+
+interface UpdateProjectPayload {
+  name?: string;
+  description?: string;
+  managerId?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  memberIds?: string[];
+}
+export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TaskComment, TokenClaim, Permission, Role, Tag, Project, ProjectMemberBrief, CreateProjectPayload, UpdateProjectPayload };
 
 export type { TaskStats };
 

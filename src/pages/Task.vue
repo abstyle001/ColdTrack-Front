@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { h, ref, resolveComponent, useTemplateRef, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { parseDateTime, toCalendarDate, toTime } from '@internationalized/date';
 import type { CalendarDateTime } from '@internationalized/date';
 import type { Task, Tag } from '../utils/types';
-import type { TableColumn } from '@nuxt/ui';
+import type { TableColumn, AcceptableValue } from '@nuxt/ui';
 import { useTask } from '../logic/useTask';
 import { usePermission } from '../logic/usePermission';
 import { useUserStore } from '../store';
 import TaskKanban from '../components/TaskKanban.vue';
 import TaskDetailDrawer from '../components/TaskDetailDrawer.vue';
-import { fetchTaskListRequest } from '../api/userApi';
 import {
+  fetchTaskListRequest,
+  fetchProjectDetailRequest,
   createTaskRequest,
   updateTaskRequest,
   deleteTaskRequest,
@@ -21,9 +23,12 @@ import {
 
 const { can } = usePermission();
 const userStore = useUserStore();
+const route = useRoute();
 
-// Non-admin users only see tasks assigned to them
-const taskAssigneeId = userStore.isAdmin() ? undefined : userStore.user.id;
+// 可见性由后端统一控制（自己的任务 + 负责/参与的项目任务），前端不再强制按负责人过滤
+
+// 从路由 query 初始化项目筛选（项目页「查看任务」跳转过来时生效）
+const initialProjectId = Number(route.query.projectId) || undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const table: any = useTemplateRef("table");
@@ -37,8 +42,9 @@ const {
   statusFilter,
   priorityFilter,
   tagFilter,
+  projectFilter,
   tagList,
-  userList,
+  projectList,
   updatePage,
   fetchList,
   fetchCount,
@@ -47,7 +53,15 @@ const {
   filter,
   deleteBatch,
   batchUpdateStatus,
-} = useTask(table, taskAssigneeId);
+} = useTask(table, undefined, initialProjectId);
+
+// 项目负责人可在自己负责的项目内新建/编辑/删除任务（后端同样放行，此处控制按钮显隐）
+const managedProjectIds = computed(() =>
+  projectList.value.filter((p) => p.managerId === userStore.user.id).map((p) => p.id)
+);
+const canCreateTask = computed(() => can('task.create') || managedProjectIds.value.length > 0);
+const canEditTask = (task: Task) => can('task.update') || managedProjectIds.value.includes(task.projectId);
+const canDeleteTask = (task: Task) => can('task.delete') || managedProjectIds.value.includes(task.projectId);
 
 const statusOptions = [
   { label: '待办', value: 'Todo' },
@@ -63,16 +77,23 @@ const priorityOptions = [
   { label: '紧急', value: 'Urgent' },
 ];
 
-const userOptions = computed(() =>
-  userList.value.map((u) => ({ label: u.nickName || u.userName, value: u.id }))
+const projectOptions = computed(() =>
+  projectList.value.map((p) => ({ label: p.name, value: p.id }))
+);
+
+// 筛选器使用字符串值，与 statusFilter/priorityFilter 保持一致
+const projectFilterOptions = computed(() =>
+  projectList.value.map((p) => ({ label: p.name, value: String(p.id) }))
 );
 
 const tagOptions = computed(() =>
   tagList.value.map((t) => ({ label: t.name, value: String(t.id) }))
 );
 
+// 注意：Reka UI 的 SelectItem 不允许空字符串 value（会抛错并锁死页面点击），
+// 「默认」用哨兵值 'default'，变更时映射回空字符串
 const tagColorOptions = [
-  { label: '默认', value: '' },
+  { label: '默认', value: 'default' },
   { label: '主色', value: 'primary' },
   { label: '中性', value: 'neutral' },
   { label: '信息', value: 'info' },
@@ -91,6 +112,7 @@ type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 const form = ref<{
   title: string;
   description: string;
+  projectId: number | undefined;
   assigneeId: string;
   priority: TaskPriority;
   status: TaskStatus;
@@ -98,11 +120,31 @@ const form = ref<{
 }>({
   title: '',
   description: '',
+  projectId: undefined,
   assigneeId: '',
   priority: 'Medium',
   status: 'Todo',
   deadline: '',
 });
+
+// 负责人候选列表：仅所选项目的成员（项目-成员联动）
+const memberOptions = ref<{ label: string; value: string }[]>([]);
+
+async function onFormProjectChange(value: AcceptableValue) {
+  const projectId = value ? Number(value) : undefined;
+  if (!projectId) {
+    memberOptions.value = [];
+    form.value.assigneeId = '';
+    return;
+  }
+  const detail = await fetchProjectDetailRequest(projectId);
+  const members = detail?.members ?? projectList.value.find((p) => p.id === projectId)?.members ?? [];
+  memberOptions.value = members.map((m) => ({ label: m.nickName || m.userName, value: m.id }));
+  // 切换项目后，若已选负责人不在新项目成员列表中则清空
+  if (form.value.assigneeId && !members.some((m) => m.id === form.value.assigneeId)) {
+    form.value.assigneeId = '';
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const deadlineDate: any = ref(undefined);
@@ -132,9 +174,12 @@ function openDetail(task: Task) {
 
 function openCreate() {
   editTarget.value = null;
+  // 若当前已按项目筛选，则新建时默认选中该项目
+  const presetProjectId = projectFilter.value ? Number(projectFilter.value) : undefined;
   form.value = {
     title: '',
     description: '',
+    projectId: presetProjectId,
     assigneeId: '',
     priority: 'Medium',
     status: 'Todo',
@@ -144,6 +189,7 @@ function openCreate() {
   deadlineTime.value = undefined;
   popoverOpen.value = false;
   selectedTagIds.value = [];
+  onFormProjectChange(presetProjectId ?? '');
   formOpen.value = true;
 }
 
@@ -154,6 +200,7 @@ function openEdit(task: Task) {
   form.value = {
     title: task.title,
     description: task.description || '',
+    projectId: task.projectId,
     assigneeId: task.assigneeId || '',
     priority: task.priority,
     status: task.status,
@@ -168,6 +215,7 @@ function openEdit(task: Task) {
   }
   selectedTagIds.value = (task.tags ?? []).map((t) => t.id);
   popoverOpen.value = false;
+  onFormProjectChange(task.projectId);
   formOpen.value = true;
 }
 
@@ -184,6 +232,15 @@ function parseDeadlineDate(raw: string | undefined | null): CalendarDateTime | u
 
 async function submitForm() {
   if (!form.value.title || formSaving.value) return;
+  if (!form.value.projectId) {
+    toast.add({
+      title: "提示",
+      description: "请选择所属项目",
+      icon: "i-material-symbols:error-circle-rounded-outline-sharp",
+      color: "error",
+    });
+    return;
+  }
   formSaving.value = true;
   let err: string | null = null;
   if (editTarget.value) {
@@ -310,9 +367,14 @@ const kanbanLoading = ref(false);
 
 async function fetchAllTasks() {
   kanbanLoading.value = true;
-  const data = await fetchTaskListRequest();
+  const data = await fetchTaskListRequest(projectFilter.value ? Number(projectFilter.value) : undefined);
   kanbanTasks.value = data || [];
   kanbanLoading.value = false;
+}
+
+function onProjectFilterChange() {
+  applyFilter();
+  if (viewMode.value === 'kanban') fetchAllTasks();
 }
 
 async function handleKanbanStatusChanged() {
@@ -422,6 +484,15 @@ const columns: TableColumn<Task>[] = [
     },
   },
   {
+    id: 'project',
+    header: '项目',
+    cell: ({ row }) => {
+      const name = row.original.projectName;
+      if (!name) return h('span', { class: 'text-muted' }, '—');
+      return h(UBadge, { label: name, color: 'primary', variant: 'soft', size: 'xs' });
+    },
+  },
+  {
     id: 'assignee',
     header: '负责人',
     cell: ({ row }) => {
@@ -494,6 +565,13 @@ const columns: TableColumn<Task>[] = [
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <div class="flex flex-wrap items-center gap-2">
           <UInput class="max-w-sm" icon="i-lucide-search" placeholder="筛选标题或描述" @update:model-value="filter" />
+          <USelect
+            v-model="projectFilter"
+            :items="projectFilterOptions"
+            placeholder="按项目筛选"
+            class="w-40"
+            @update:model-value="onProjectFilterChange"
+          />
           <USelect
             v-model="statusFilter"
             :items="statusOptions"
@@ -613,11 +691,21 @@ const columns: TableColumn<Task>[] = [
             <UFormField label="描述">
               <UTextarea v-model="form.description" placeholder="任务描述（可选）" class="w-full" :rows="3" />
             </UFormField>
+            <UFormField label="所属项目" required>
+              <USelect
+                v-model="form.projectId"
+                :items="projectOptions"
+                placeholder="选择所属项目"
+                class="w-full"
+                @update:model-value="onFormProjectChange"
+              />
+            </UFormField>
             <UFormField label="负责人">
               <USelect
                 v-model="form.assigneeId"
-                :items="userOptions"
-                placeholder="选择负责人"
+                :items="memberOptions"
+                :placeholder="form.projectId ? '选择负责人（须为项目成员）' : '请先选择所属项目'"
+                :disabled="!form.projectId"
                 class="w-full"
               />
             </UFormField>
@@ -698,7 +786,7 @@ const columns: TableColumn<Task>[] = [
               <div v-for="tag in tagList" :key="tag.id" class="flex items-center gap-2">
                 <template v-if="editingTagId === tag.id">
                   <UInput v-model="editingTagName" class="flex-1" placeholder="标签名称" />
-                  <USelect v-model="editingTagColor" :items="tagColorOptions" class="w-28" />
+                  <USelect :model-value="editingTagColor || 'default'" :items="tagColorOptions" class="w-28" @update:model-value="editingTagColor = $event === 'default' ? '' : String($event ?? '')" />
                   <UButton size="xs" color="primary" icon="i-lucide-check" aria-label="保存" @click="saveEditTag" />
                   <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" aria-label="取消" @click="editingTagId = null" />
                 </template>
@@ -713,7 +801,7 @@ const columns: TableColumn<Task>[] = [
             <USeparator />
             <div v-if="can('tag.create')" class="flex items-center gap-2">
               <UInput v-model="newTagName" class="flex-1" placeholder="新标签名称" />
-              <USelect v-model="newTagColor" :items="tagColorOptions" class="w-28" />
+              <USelect :model-value="newTagColor || 'default'" :items="tagColorOptions" class="w-28" @update:model-value="newTagColor = $event === 'default' ? '' : String($event ?? '')" />
               <UButton size="sm" color="primary" label="添加" :loading="tagSaving" @click="addTag" />
             </div>
           </div>
@@ -739,8 +827,3 @@ const columns: TableColumn<Task>[] = [
 </template>
 
 <style scoped></style>
-
-
-
-
-

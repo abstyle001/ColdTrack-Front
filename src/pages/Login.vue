@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen flex flex-col justify-center items-center bg-gray-950 p-4 relative overflow-hidden">
     <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
@@ -103,6 +103,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   token.value = data;
   loginStatus.value = true;
   loading.value = false;
+  // 先清掉可能残留的上一个账号状态，再写入当前账号信息
+  userStore.reset();
   const claim = await getTokenClaimRequest();
   if (claim) {
     userStore.setPermissions(claim.permissions, claim.roles);
