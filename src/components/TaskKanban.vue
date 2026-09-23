@@ -164,10 +164,27 @@ function countByStatus(key: string) {
               variant="soft"
               size="xs"
             />
+            <UBadge
+              v-if="task.projectName"
+              :label="task.projectName"
+              color="primary"
+              variant="outline"
+              size="xs"
+            />
             <span v-if="task.deadline" class="flex items-center gap-0.5" :class="new Date(task.deadline) < new Date() ? 'text-error' : ''">
               <UIcon name="i-lucide-calendar" class="size-3" />
               {{ task.deadline.slice(0, 10) }}
             </span>
+          </div>
+          <div v-if="task.tags && task.tags.length" class="flex flex-wrap gap-1 mb-1.5">
+            <UBadge
+              v-for="tag in task.tags"
+              :key="tag.id"
+              :label="tag.name"
+              :color="tag.color || 'neutral'"
+              variant="soft"
+              size="xs"
+            />
           </div>
           <div v-if="task.assigneeName" class="flex items-center gap-1 text-xs text-muted">
             <UIcon name="i-lucide-user" class="size-3" />

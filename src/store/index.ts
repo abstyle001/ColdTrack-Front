@@ -30,6 +30,21 @@ export const useUserStore = defineStore("user", () => {
   const hasPermission = (key: string) => permissions.value.includes(key);
   const hasRole = (role: string) => roles.value.includes(role);
   const isAdmin = () => roles.value.includes("Admin");
+  // 退出登录/切换账号时清空，避免残留上一个账号的信息与权限
+  const reset = () => {
+    user.value = {
+      id: "",
+      userName: "",
+      email: "",
+      nickName: "",
+      phone: "",
+      city: "",
+      createdAt: "",
+      avatar: "",
+    };
+    permissions.value = [];
+    roles.value = [];
+  };
   return {
     user,
     avatarVersion,
@@ -41,5 +56,6 @@ export const useUserStore = defineStore("user", () => {
     hasPermission,
     hasRole,
     isAdmin,
+    reset,
   };
 });

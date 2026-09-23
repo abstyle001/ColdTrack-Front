@@ -39,6 +39,14 @@ const links = computed<NavigationMenuItem[][]>(() => {
       onSelect: () => { open.value = false },
     });
   }
+  if (can('project.read')) {
+    items.push({
+      label: '项目',
+      icon: 'i-material-symbols:folder-outline',
+      to: '/project',
+      onSelect: () => { open.value = false },
+    });
+  }
   if (can('task.read')) {
     items.push({
       label: '任务',

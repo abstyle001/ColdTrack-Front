@@ -1,5 +1,5 @@
-﻿import { onMounted, ref } from "vue";
-import type { Task, User } from "../utils/types";
+import { onMounted, ref } from "vue";
+import type { Task, User, Tag, Project } from "../utils/types";
 import type { AcceptableValue } from "@nuxt/ui";
 import {
   fetchTaskPageRequest,
@@ -7,10 +7,12 @@ import {
   deleteTaskBatchRequest,
   updateTaskStatusBatchRequest,
   fetchUserListRequest,
+  fetchTagListRequest,
+  fetchProjectListRequest,
 } from "../api/userApi";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useTask(tableRef: any, assigneeId?: string) {
+export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: number) {
   const taskList = ref<Task[]>([]);
   const originalTaskList = ref<Task[]>([]);
   const taskCount = ref<number>(0);
@@ -21,19 +23,35 @@ export function useTask(tableRef: any, assigneeId?: string) {
 
   const statusFilter = ref<string>("");
   const priorityFilter = ref<string>("");
+  const tagFilter = ref<string>("");
+  const projectFilter = ref<string>(initialProjectId ? String(initialProjectId) : "");
 
   const userList = ref<User[]>([]);
+  const tagList = ref<Tag[]>([]);
+  const projectList = ref<Project[]>([]);
 
   async function fetchUsers() {
     const data = await fetchUserListRequest();
     if (data) userList.value = data;
   }
 
+  async function fetchTags() {
+    const data = await fetchTagListRequest();
+    if (data) tagList.value = data;
+  }
+
+  async function fetchProjects() {
+    const data = await fetchProjectListRequest();
+    if (data) projectList.value = data;
+  }
+
   async function fetchCount() {
     const data = await fetchTaskCountRequest(
       assigneeId || undefined,
       statusFilter.value || undefined,
-      priorityFilter.value || undefined
+      priorityFilter.value || undefined,
+      tagFilter.value || undefined,
+      projectFilter.value ? Number(projectFilter.value) : undefined
     );
     if (data !== null) {
       taskCount.value = data;
@@ -51,7 +69,9 @@ export function useTask(tableRef: any, assigneeId?: string) {
       pageSize.value,
       assigneeId || undefined,
       statusFilter.value || undefined,
-      priorityFilter.value || undefined
+      priorityFilter.value || undefined,
+      tagFilter.value || undefined,
+      projectFilter.value ? Number(projectFilter.value) : undefined
     );
     if (data) {
       taskList.value = data;
@@ -68,6 +88,8 @@ export function useTask(tableRef: any, assigneeId?: string) {
   async function clearFilter() {
     statusFilter.value = "";
     priorityFilter.value = "";
+    tagFilter.value = "";
+    projectFilter.value = "";
     await fetchCount();
     await fetchList(1);
   }
@@ -170,6 +192,8 @@ export function useTask(tableRef: any, assigneeId?: string) {
 
   onMounted(async () => {
     await fetchUsers();
+    await fetchTags();
+    await fetchProjects();
     await fetchCount();
     await fetchList();
   });
@@ -182,7 +206,13 @@ export function useTask(tableRef: any, assigneeId?: string) {
     open,
     statusFilter,
     priorityFilter,
+    tagFilter,
+    projectFilter,
     userList,
+    tagList,
+    projectList,
+    fetchTags,
+    fetchProjects,
     fetchCount,
     updatePage,
     fetchList,

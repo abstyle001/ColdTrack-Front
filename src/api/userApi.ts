@@ -12,6 +12,10 @@ import type { TaskStats,
   UserBrief,
   Task,
   TaskComment,
+  Tag,
+  Project,
+  CreateProjectPayload,
+  UpdateProjectPayload,
 } from "../utils/types";
 
 async function fetchUserPageRequest(pageNumber: number, pageSize: number) {
@@ -363,9 +367,12 @@ async function fetchUserRolesRequest(userId: string) {
 }
 
 // ============ 任务 Task ============
-async function fetchTaskListRequest() {
+async function fetchTaskListRequest(projectId?: number) {
+  const params: Record<string, number> = {};
+  if (projectId) params.projectId = projectId;
   const [err, data] = await request<Task[]>("/task", "GET", {
     token: token.value,
+    body: params,
   });
   return err ? null : data;
 }
@@ -377,7 +384,7 @@ async function getTaskRequest(id: number) {
   return err ? null : data;
 }
 
-async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assigneeId?: string, status?: string, priority?: string) {
+async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assigneeId?: string, status?: string, priority?: string, tagId?: string, projectId?: number) {
   const params: Record<string, string | number> = {
     number: pageNumber,
     size: pageSize,
@@ -385,6 +392,8 @@ async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assign
   if (assigneeId) params.assigneeId = assigneeId;
   if (status) params.status = status;
   if (priority) params.priority = priority;
+  if (tagId) params.tagId = tagId;
+  if (projectId) params.projectId = projectId;
   const [err, data] = await request<Task[]>("/task/page", "GET", {
     token: token.value,
     body: params,
@@ -392,11 +401,13 @@ async function fetchTaskPageRequest(pageNumber: number, pageSize: number, assign
   return err ? null : data;
 }
 
-async function fetchTaskCountRequest(assigneeId?: string, status?: string, priority?: string) {
-  const params: Record<string, string> = {};
+async function fetchTaskCountRequest(assigneeId?: string, status?: string, priority?: string, tagId?: string, projectId?: number) {
+  const params: Record<string, string | number> = {};
   if (assigneeId) params.assigneeId = assigneeId;
   if (status) params.status = status;
   if (priority) params.priority = priority;
+  if (tagId) params.tagId = tagId;
+  if (projectId) params.projectId = projectId;
   const [err, data] = await request<number>("/task/count", "GET", {
     token: token.value,
     body: params,
@@ -404,30 +415,34 @@ async function fetchTaskCountRequest(assigneeId?: string, status?: string, prior
   return err ? null : data;
 }
 
-async function createTaskRequest(task: Partial<Task>) {
+async function createTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
   const [err, data] = await request<Task>("/task", "POST", {
     token: token.value,
     body: {
       title: task.title,
       description: task.description,
+      projectId: task.projectId,
       assigneeId: task.assigneeId,
       priority: task.priority,
       deadline: task.deadline,
+      tagIds: task.tagIds,
     },
   });
   return { err, data };
 }
 
-async function updateTaskRequest(task: Partial<Task>) {
+async function updateTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
   const [err, data] = await request<Task>(`/task/${task.id}`, "PUT", {
     token: token.value,
     body: {
       title: task.title,
       description: task.description,
+      projectId: task.projectId,
       assigneeId: task.assigneeId,
       status: task.status,
       priority: task.priority,
       deadline: task.deadline,
+      tagIds: task.tagIds,
     },
   });
   return { err, data };
@@ -472,6 +487,53 @@ async function fetchTaskStatsRequest() {
   return err ? null : data;
 }
 
+// ============ 项目 Project ============
+async function fetchProjectListRequest(params?: { status?: string; managerId?: string; keyword?: string }) {
+  const [err, data] = await request<Project[]>("/project", "GET", {
+    token: token.value,
+    body: params,
+  });
+  return err ? null : data;
+}
+
+async function fetchProjectDetailRequest(id: number) {
+  const [err, data] = await request<Project>(`/project/${id}`, "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function createProjectRequest(payload: CreateProjectPayload) {
+  const [err, data] = await request<Project>("/project", "POST", {
+    token: token.value,
+    body: {
+      name: payload.name,
+      description: payload.description,
+      managerId: payload.managerId,
+      status: payload.status,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      memberIds: payload.memberIds,
+    },
+  });
+  return { err, data };
+}
+
+async function updateProjectRequest(id: number, payload: UpdateProjectPayload) {
+  const [err, data] = await request<Project>(`/project/${id}`, "PUT", {
+    token: token.value,
+    body: payload,
+  });
+  return { err, data };
+}
+
+async function deleteProjectRequest(id: number) {
+  const [err, _] = await request<void>(`/project/${id}`, "DELETE", {
+    token: token.value,
+  });
+  return err;
+}
+
 // ============ 任务评论 TaskComment ============
 async function fetchTaskCommentsRequest(taskId: number) {
   const [err, data] = await request<TaskComment[]>(`/task/${taskId}/comments`, "GET", {
@@ -486,6 +548,37 @@ async function createTaskCommentRequest(taskId: number, content: string) {
     body: { content },
   });
   return { err, data };
+}
+
+// ============ 标签 Tag ============
+async function fetchTagListRequest() {
+  const [err, data] = await request<Tag[]>("/tag", "GET", {
+    token: token.value,
+  });
+  return err ? null : data;
+}
+
+async function createTagRequest(tag: { name: string; color?: string }) {
+  const [err, data] = await request<Tag>("/tag", "POST", {
+    token: token.value,
+    body: tag,
+  });
+  return { err, data };
+}
+
+async function updateTagRequest(id: number, tag: { name?: string; color?: string }) {
+  const [err, data] = await request<Tag>(`/tag/${id}`, "PUT", {
+    token: token.value,
+    body: tag,
+  });
+  return { err, data };
+}
+
+async function deleteTagRequest(id: number) {
+  const [err] = await request<void>(`/tag/${id}`, "DELETE", {
+    token: token.value,
+  });
+  return err;
 }
 
 async function fetchUserBriefRequest(includeAdmin: boolean = false) {
@@ -545,8 +638,17 @@ export {
   updateTaskStatusRequest,
   updateTaskStatusBatchRequest,
   fetchTaskStatsRequest,
+  fetchProjectListRequest,
+  fetchProjectDetailRequest,
+  createProjectRequest,
+  updateProjectRequest,
+  deleteProjectRequest,
   fetchTaskCommentsRequest,
   createTaskCommentRequest,
+  fetchTagListRequest,
+  createTagRequest,
+  updateTagRequest,
+  deleteTagRequest,
   fetchUserBriefRequest,
 };
 
