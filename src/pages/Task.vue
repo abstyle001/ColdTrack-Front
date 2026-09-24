@@ -81,6 +81,13 @@ const projectOptions = computed(() =>
   projectList.value.map((p) => ({ label: p.name, value: p.id }))
 );
 
+// 表单中的项目下拉：无全局 task.create 权限的负责人只能选自己负责的项目（后端同样会拦截）
+const formProjectOptions = computed(() =>
+  can('task.create')
+    ? projectOptions.value
+    : projectOptions.value.filter((o) => managedProjectIds.value.includes(o.value as number))
+);
+
 // 筛选器使用字符串值，与 statusFilter/priorityFilter 保持一致
 const projectFilterOptions = computed(() =>
   projectList.value.map((p) => ({ label: p.name, value: String(p.id) }))
@@ -599,9 +606,9 @@ const columns: TableColumn<Task>[] = [
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
-          <UButton v-if="can('task.create')" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
+          <UButton v-if="canCreateTask" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
           <UButton v-if="can('tag.create')" label="管理标签" icon="i-lucide-tag" variant="outline" @click="openTagManage" />
-          <UPopover v-if="can('task.update') && viewMode === 'table'" v-model:open="batchStatusOpen">
+          <UPopover v-if="(can('task.update') || managedProjectIds.length > 0) && viewMode === 'table'" v-model:open="batchStatusOpen">
             <UButton variant="outline" label="批量改状态" icon="i-lucide-list-checks" />
             <template #content>
               <div class="flex flex-col gap-1 p-2">
@@ -616,7 +623,7 @@ const columns: TableColumn<Task>[] = [
               </div>
             </template>
           </UPopover>
-          <UButton v-if="can('task.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
+          <UButton v-if="can('task.delete') || managedProjectIds.length > 0" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
           <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
             <template #body>
               确定要删除吗，此操作无法撤销！
@@ -649,14 +656,14 @@ const columns: TableColumn<Task>[] = [
               @click="openDetail(row.original)"
             />
             <UButton
-              v-if="can('task.update')"
+              v-if="canEditTask(row.original)"
               size="xs"
               variant="ghost"
               label="编辑"
               @click="openEdit(row.original)"
             />
             <UButton
-              v-if="can('task.delete')"
+              v-if="canDeleteTask(row.original)"
               size="xs"
               variant="ghost"
               color="error"
@@ -678,7 +685,7 @@ const columns: TableColumn<Task>[] = [
 
       <div v-if="viewMode === 'kanban'" class="flex-1">
         <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">加载中...</div>
-        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" @edit="openEdit" @delete="confirmDelete" @detail="openDetail" @statusChanged="handleKanbanStatusChanged" />
+        <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" :managedProjectIds="managedProjectIds" @edit="openEdit" @delete="confirmDelete" @detail="openDetail" @statusChanged="handleKanbanStatusChanged" />
       </div>
 
       <!-- 新建 / 编辑任务 -->
@@ -694,7 +701,7 @@ const columns: TableColumn<Task>[] = [
             <UFormField label="所属项目" required>
               <USelect
                 v-model="form.projectId"
-                :items="projectOptions"
+                :items="formProjectOptions"
                 placeholder="选择所属项目"
                 class="w-full"
                 @update:model-value="onFormProjectChange"

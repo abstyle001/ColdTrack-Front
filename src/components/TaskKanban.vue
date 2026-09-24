@@ -7,7 +7,16 @@ const props = defineProps<{
   tasks: Task[];
   canUpdate: boolean;
   canDelete: boolean;
+  managedProjectIds?: number[];
 }>();
+
+// 项目负责人可在自己负责的项目内编辑/删除任务（与后端放行规则一致）
+function canUpdateTask(task: Task) {
+  return props.canUpdate || (props.managedProjectIds?.includes(task.projectId) ?? false);
+}
+function canDeleteTask(task: Task) {
+  return props.canDelete || (props.managedProjectIds?.includes(task.projectId) ?? false);
+}
 
 const emit = defineEmits<{
   (e: 'edit', task: Task): void;
@@ -138,7 +147,7 @@ function countByStatus(key: string) {
                 @click.stop="emit('detail', task)"
               />
               <UButton
-                v-if="canUpdate"
+                v-if="canUpdateTask(task)"
                 icon="i-lucide-pencil"
                 size="xs"
                 variant="ghost"
@@ -147,7 +156,7 @@ function countByStatus(key: string) {
                 @click.stop="emit('edit', task)"
               />
               <UButton
-                v-if="canDelete"
+                v-if="canDeleteTask(task)"
                 icon="i-lucide-trash"
                 size="xs"
                 variant="ghost"
