@@ -1,4 +1,5 @@
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Department } from "../utils/types";
 import {
   fetchDepartmentListRequest,
@@ -20,6 +21,7 @@ export function useDepartment() {
   const departmentCount = ref(0);
 
   const toast = useToast();
+  const { t } = useI18n();
 
   async function fetchDepartments(pageNumber: number = 1) {
     loading.value = true;
@@ -39,16 +41,16 @@ export function useDepartment() {
     const { err, data } = await createDepartmentRequest(payload);
     if (err) {
       toast.add({
-        title: "创建失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("department.toast.createFailed"),
+        description: typeof err === "string" ? err : t("api.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return null;
     }
     toast.add({
-      title: "创建成功",
-      description: `部门「${data?.name}」已创建`,
+      title: t("department.toast.createSuccess"),
+      description: t("department.toast.created", { name: data?.name }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -60,16 +62,16 @@ export function useDepartment() {
     const { err, data } = await updateDepartmentRequest(payload);
     if (err) {
       toast.add({
-        title: "更新失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("department.toast.updateFailed"),
+        description: typeof err === "string" ? err : t("api.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return null;
     }
     toast.add({
-      title: "更新成功",
-      description: `部门「${data?.name}」已更新`,
+      title: t("department.toast.updateSuccess"),
+      description: t("department.toast.updated", { name: data?.name }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -81,16 +83,16 @@ export function useDepartment() {
     const err = await deleteDepartmentRequest(id);
     if (err) {
       toast.add({
-        title: "删除失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("department.toast.deleteFailed"),
+        description: typeof err === "string" ? err : t("api.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return false;
     }
     toast.add({
-      title: "删除成功",
-      description: "部门及其子树已删除",
+      title: t("department.toast.deleteSuccess"),
+      description: t("department.toast.deleted"),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });

@@ -2,6 +2,7 @@ import {
   onMounted,
   ref,
 } from "vue";
+import { useI18n } from "vue-i18n";
 import type { User } from "../utils/types";
 import request from "../utils/request";
 import { token } from "../utils/useStorage";
@@ -18,6 +19,7 @@ export function usePerson(tableRef: any) {
   const loading = ref<boolean>(true);
 
   const toast = useToast();
+  const { t } = useI18n();
   const open = ref(false);
 
   async function fetchUserCount() {
@@ -59,8 +61,8 @@ export function usePerson(tableRef: any) {
     const selectedRows = tableRef.value?.tableApi.getSelectedRowModel().rows;
     if (selectedRows === undefined || selectedRows.length === 0) {
       toast.add({
-        title: "提示",
-        description: "请至少选择一条记录",
+        title: t('person.toast.tip'),
+        description: t('person.toast.selectAtLeastOne'),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
@@ -74,7 +76,7 @@ export function usePerson(tableRef: any) {
     const err = await deleteUserBatchRequest(selectedIds);
     if (err) {
       toast.add({
-        title: "删除失败",
+        title: t('person.toast.deleteFailed'),
         description: err,
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
@@ -82,8 +84,8 @@ export function usePerson(tableRef: any) {
       return;
     }
     toast.add({
-      title: "删除成功",
-      description: `成功删除${selectedIds.length}条记录`,
+      title: t('person.toast.deleteSuccess'),
+      description: t('person.toast.deletedDesc', { count: selectedIds.length }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });

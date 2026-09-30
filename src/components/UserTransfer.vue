@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { User, UserBrief } from "../utils/types";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   allUsers: UserBrief[];
@@ -82,21 +85,21 @@ function batchAdd() {
     <!-- Left: available -->
     <div class="flex flex-col min-w-0">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm font-semibold">可添加的用户</span>
+        <span class="text-sm font-semibold">{{ t('rolePermission.transfer.available') }}</span>
         <span class="text-xs text-muted">{{ filtered.length }}</span>
       </div>
 
       <div class="flex flex-col gap-1.5 mb-2">
-        <UInput v-model="search" placeholder="搜索姓名或邮箱…" icon="i-lucide-search" size="xs" />
+        <UInput v-model="search" :placeholder="t('rolePermission.transfer.searchPlaceholder')" icon="i-lucide-search" size="xs" />
         <div class="flex gap-1.5">
-          <USelect v-model="deptFilter" :items="deptOptions" placeholder="全部部门" size="xs" class="flex-1" />
-          <USelect v-model="posFilter" :items="posOptions" placeholder="全部职位" size="xs" class="flex-1" />
+          <USelect v-model="deptFilter" :items="deptOptions" :placeholder="t('rolePermission.transfer.allDepts')" size="xs" class="flex-1" />
+          <USelect v-model="posFilter" :items="posOptions" :placeholder="t('rolePermission.transfer.allPositions')" size="xs" class="flex-1" />
         </div>
       </div>
 
       <div class="max-h-60 overflow-auto border rounded-md">
         <div v-if="filtered.length === 0" class="text-muted text-xs p-3 text-center">
-          无匹配用户
+          {{ t('rolePermission.transfer.noMatch') }}
         </div>
         <div
           v-for="u in filtered"
@@ -120,7 +123,7 @@ function batchAdd() {
         <UCheckbox
           :model-value="allFilteredSelected"
           @update:model-value="toggleSelectAll()"
-          label="全选"
+          :label="t('rolePermission.transfer.selectAll')"
         />
         <UButton
           size="xs"
@@ -130,7 +133,7 @@ function batchAdd() {
           :loading="loading"
           @click="batchAdd"
         >
-          添加选中 ({{ selectedIds.size }})
+          {{ t('rolePermission.transfer.addSelected', { count: selectedIds.size }) }}
         </UButton>
       </div>
     </div>
@@ -138,13 +141,13 @@ function batchAdd() {
     <!-- Right: members -->
     <div class="flex flex-col min-w-0">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm font-semibold">当前成员</span>
+        <span class="text-sm font-semibold">{{ t('rolePermission.transfer.members') }}</span>
         <span class="text-xs text-muted">{{ roleUsers.length }}</span>
       </div>
 
       <div class="max-h-72 overflow-auto border rounded-md">
         <div v-if="roleUsers.length === 0" class="text-muted text-xs p-3 text-center">
-          暂无成员
+          {{ t('rolePermission.transfer.noMembers') }}
         </div>
         <div
           v-for="u in roleUsers"

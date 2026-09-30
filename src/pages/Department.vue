@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, h, ref, resolveComponent, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Department, User } from "../utils/types";
 import { useDepartment } from "../logic/useDepartment";
 import { usePermission } from "../logic/usePermission";
@@ -8,6 +9,7 @@ import type { TableColumn } from "@nuxt/ui";
 
 const UButton = resolveComponent("UButton");
 const { can } = usePermission();
+const { t } = useI18n();
 
 const {
   departmentList,
@@ -183,10 +185,10 @@ function managerName(id: string) {
   return users.value.find((u) => u.value === id)?.label ?? "—";
 }
 
-const columns: TableColumn<Department>[] = [
+const columns = computed<TableColumn<Department>[]>(() => [
   {
     accessorKey: "name",
-    header: "部门名称",
+    header: t("department.table.name"),
     cell: ({ row }) => {
       const dept = row.original;
       const hasChildren = !!(dept.children && dept.children.length);
@@ -217,25 +219,25 @@ const columns: TableColumn<Department>[] = [
   },
   {
     accessorKey: "managerName",
-    header: "负责人",
+    header: t("department.table.manager"),
     cell: ({ row }) => managerName(row.original.managerId),
   },
   {
     accessorKey: "workspace",
-    header: "工作地",
+    header: t("department.table.workspace"),
   },
   {
     accessorKey: "explain",
-    header: "说明",
+    header: t("department.table.explain"),
     cell: ({ row }) => h("span", { class: "text-muted truncate" }, row.original.explain),
   },
   {
     accessorKey: "createdAt",
-    header: "创建时间",
+    header: t("department.table.createdAt"),
   },
   {
     id: "actions",
-    header: "操作",
+    header: t("department.table.actions"),
     cell: ({ row }) => {
       const buttons: any[] = [];
       if (can("position.read")) {
@@ -243,7 +245,7 @@ const columns: TableColumn<Department>[] = [
           h(UButton, {
             size: "xs",
             variant: "ghost",
-            label: "职位",
+            label: t("department.table.positions"),
             onClick: () => openPositions(row.original),
           })
         );
@@ -253,7 +255,7 @@ const columns: TableColumn<Department>[] = [
           h(UButton, {
             size: "xs",
             variant: "ghost",
-            label: "编辑",
+            label: t("department.table.edit"),
             onClick: () => openEdit(row.original),
           })
         );
@@ -264,7 +266,7 @@ const columns: TableColumn<Department>[] = [
             size: "xs",
             variant: "ghost",
             color: "error",
-            label: "删除",
+            label: t("department.table.delete"),
             onClick: () => openDelete(row.original),
           })
         );
@@ -272,16 +274,16 @@ const columns: TableColumn<Department>[] = [
       return h("div", { class: "flex gap-1" }, buttons);
     },
   },
-];
+]);
 
 loadUsers();
 </script>
 
 <template>
-  <DashboardPanel title="部门">
+  <DashboardPanel :title="t('department.title')">
     <template v-if="can('department.read')">
     <div class="flex flex-wrap items-center justify-between gap-1.5">
-      <UButton v-if="can('department.create')" label="新建部门" icon="i-lucide-plus" @click="openCreate" />
+      <UButton v-if="can('department.create')" :label="t('department.createButton')" icon="i-lucide-plus" @click="openCreate" />
     </div>
 
     <UTable
@@ -295,7 +297,7 @@ loadUsers();
 
     <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
       <div class="text-sm text-muted">
-        共 {{ departmentCount }} 条
+        {{ t("department.totalCount", { count: departmentCount }) }}
       </div>
       <UPagination
         v-model:page="page"
@@ -308,65 +310,65 @@ loadUsers();
     </div>
 
     <!-- 新建/编辑 -->
-    <UModal v-model:open="open" :title="editing ? '编辑部门' : '新建部门'">
+    <UModal v-model:open="open" :title="editing ? t('department.form.editTitle') : t('department.form.createTitle')">
       <template #body>
         <div class="flex flex-col gap-3">
-          <UFormField label="部门名称">
-            <UInput v-model="form.name" placeholder="请输入部门名称" class="w-full" />
+          <UFormField :label="t('department.form.name')">
+            <UInput v-model="form.name" :placeholder="t('department.form.namePlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="父部门">
+          <UFormField :label="t('department.form.parent')">
             <USelect
               v-model="form.parentId"
               :items="parentOptions"
-              placeholder="一级部门（无父级）"
+              :placeholder="t('department.form.parentPlaceholder')"
               class="w-full"
             />
           </UFormField>
-          <UFormField label="负责人">
+          <UFormField :label="t('department.form.manager')">
             <USelect
               v-model="form.managerId"
               :items="users"
-              placeholder="选择负责人"
+              :placeholder="t('department.form.managerPlaceholder')"
               class="w-full"
             />
           </UFormField>
-          <UFormField label="工作地点">
-            <UInput v-model="form.workspace" placeholder="工作地点" class="w-full" />
+          <UFormField :label="t('department.form.workspace')">
+            <UInput v-model="form.workspace" :placeholder="t('department.form.workspacePlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="部门说明">
-            <UTextarea v-model="form.explain" placeholder="部门说明" class="w-full" />
+          <UFormField :label="t('department.form.explain')">
+            <UTextarea v-model="form.explain" :placeholder="t('department.form.explainPlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="附加信息">
-            <UInput v-model="form.addition" placeholder="附加信息" class="w-full" />
+          <UFormField :label="t('department.form.addition')">
+            <UInput v-model="form.addition" :placeholder="t('department.form.additionPlaceholder')" class="w-full" />
           </UFormField>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton label="取消" color="neutral" variant="subtle" @click="open = false" />
-          <UButton label="保存" color="primary" @click="submit" />
+          <UButton :label="t('common.cancel')" color="neutral" variant="subtle" @click="open = false" />
+          <UButton :label="t('common.save')" color="primary" @click="submit" />
         </div>
       </template>
     </UModal>
 
     <!-- 删除确认 -->
-    <UModal v-model:open="deleteOpen" :title="`删除部门「${deleteTarget?.name}」`">
+    <UModal v-model:open="deleteOpen" :title="t('department.delete.title', { name: deleteTarget?.name })">
       <template #body>
-        确定要删除该部门及其所有子部门吗？此操作不可撤销。
+        {{ t("department.delete.confirm") }}
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton label="取消" color="neutral" variant="subtle" @click="deleteOpen = false" />
-          <UButton label="确定删除" color="error" @click="confirmDelete" />
+          <UButton :label="t('common.cancel')" color="neutral" variant="subtle" @click="deleteOpen = false" />
+          <UButton :label="t('department.delete.confirmButton')" color="error" @click="confirmDelete" />
         </div>
       </template>
     </UModal>
 
     <!-- 部门职位 -->
-    <UModal v-model:open="positionsOpen" :title="`部门「${positionsFor?.name}」的职位`">
+    <UModal v-model:open="positionsOpen" :title="t('department.positions.title', { name: positionsFor?.name })">
       <template #body>
-        <div v-if="positionsLoading" class="text-muted">加载中…</div>
-        <div v-else-if="positionNames.length === 0" class="text-muted">暂无关联职位</div>
+        <div v-if="positionsLoading" class="text-muted">{{ t("department.positions.loading") }}</div>
+        <div v-else-if="positionNames.length === 0" class="text-muted">{{ t("department.positions.empty") }}</div>
         <ul v-else class="flex flex-col gap-1">
           <li v-for="name in positionNames" :key="name" class="rounded bg-elevated px-3 py-2">
             {{ name }}
@@ -378,7 +380,7 @@ loadUsers();
     <template v-else>
       <div class="flex flex-col items-center justify-center py-16 text-muted">
         <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
-        <p class="text-lg">您没有访问此页面的权限</p>
+        <p class="text-lg">{{ t("department.noPermission") }}</p>
       </div>
     </template>
   </DashboardPanel>

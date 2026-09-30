@@ -6,20 +6,20 @@
       <div class="text-center mb-8">
         <UIcon name="i-lucide-briefcase" class="size-10 text-(--ui-primary) mx-auto mb-4" />
         <h1 class="text-2xl font-semibold text-white">ColdTrack</h1>
-        <p class="text-sm text-gray-400 mt-2">登录到您的账户</p>
+        <p class="text-sm text-gray-400 mt-2">{{ t('login.subtitle') }}</p>
       </div>
 
       <UCard class="shadow-xl">
         <UForm :schema="schema" :state="state" class="flex flex-col gap-5" @submit="onSubmit">
-          <UFormField label="邮箱" name="email">
-            <UInput v-model="state.email" placeholder="请输入邮箱" size="lg" class="w-full" />
+          <UFormField :label="t('login.form.email')" name="email">
+            <UInput v-model="state.email" :placeholder="t('login.form.emailPlaceholder')" size="lg" class="w-full" />
           </UFormField>
 
-          <UFormField label="密码" name="password">
+          <UFormField :label="t('login.form.password')" name="password">
             <UInput
               v-model="state.password"
               :type="show ? 'text' : 'password'"
-              placeholder="请输入密码"
+              :placeholder="t('login.form.passwordPlaceholder')"
               size="lg"
               class="w-full"
               :ui="{ trailing: 'pe-1' }"
@@ -29,7 +29,7 @@
                   color="neutral"
                   variant="link"
                   :icon="show ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                  :aria-label="show ? 'Hide password' : 'Show password'"
+                  :aria-label="show ? t('login.form.hidePassword') : t('login.form.showPassword')"
                   @click="show = !show"
                 />
               </template>
@@ -37,20 +37,21 @@
           </UFormField>
 
           <UButton type="submit" :loading="loading" block size="lg">
-            登录
+            {{ t('login.form.submit') }}
           </UButton>
         </UForm>
       </UCard>
     </div>
 
     <footer class="mt-8 text-gray-500 text-xs text-center relative z-10">
-      <p>&copy; 2025 ColdTrack. 保留所有权利</p>
+      <p>&copy; 2025 ColdTrack. {{ t('login.footer') }}</p>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { computed, ref, reactive } from 'vue';
+import { useI18n } from 'vue-i18n';
 import request from '../utils/request';
 import { loginStatus, token } from '../utils/useStorage';
 import { useRouter } from 'vue-router';
@@ -66,12 +67,18 @@ const toast = useToast();
 const loading = ref(false);
 const show = ref(false);
 
-const schema = z.object({
-  email: z.string().email('无效的电子邮件地址'),
-  password: z.string().min(6, '必须至少包含 6 个字符')
-});
+const { t } = useI18n();
 
-type Schema = z.output<typeof schema>
+function buildSchema() {
+  return z.object({
+    email: z.string().email(t('login.validation.emailInvalid')),
+    password: z.string().min(6, t('login.validation.passwordMin'))
+  });
+}
+
+const schema = computed(buildSchema);
+
+type Schema = z.output<ReturnType<typeof buildSchema>>
 const state = reactive<Partial<Schema>>({
   email: undefined,
   password: undefined
@@ -88,7 +95,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (err) {
     loading.value = false;
     toast.add({
-      title: '登录失败',
+      title: t('login.toast.loginFailed'),
       description: err,
       icon: 'i-lucide-circle-x',
       color: 'error'
@@ -96,8 +103,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     return;
   }
   toast.add({
-    title: '登录成功',
-    description: '正在跳转...',
+    title: t('login.toast.loginSuccess'),
+    description: t('login.toast.redirecting'),
     icon: 'i-lucide-rocket'
   })
   token.value = data;

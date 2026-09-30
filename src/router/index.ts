@@ -43,8 +43,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: "/me",
-        name: "me",
-        component: () => import("../pages/Me.vue"),
+        redirect: "/settings",
       },
       {
         path: "/settings",

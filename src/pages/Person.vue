@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { h, ref, resolveComponent, useTemplateRef, watch } from 'vue';
+import { computed, h, ref, resolveComponent, useTemplateRef, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { User, UserPositionView } from '../utils/types';
 import type { TableColumn } from '@nuxt/ui';
 import { usePerson } from '../logic/usePerson';
@@ -13,6 +14,7 @@ import {
 } from '../api/userApi';
 
 const { can } = usePermission();
+const { t } = useI18n();
 
 // 人员表格ref
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,7 +58,7 @@ async function submitCreate() {
   creating.value = false;
   if (err) {
     toast.add({
-      title: "添加失败",
+      title: t('person.toast.createFailed'),
       description: err,
       icon: "i-material-symbols:error-circle-rounded-outline-sharp",
       color: "error",
@@ -64,8 +66,8 @@ async function submitCreate() {
     return;
   }
   toast.add({
-    title: "添加成功",
-    description: "新人员已创建",
+    title: t('person.toast.createSuccess'),
+    description: t('person.toast.createdDesc'),
     icon: "i-material-symbols:check-circle-outline",
     color: "success",
   });
@@ -139,14 +141,14 @@ async function saveAssign() {
     const err = await assignUserPositionRequest(uid, id);
     if (err) {
       failed = true;
-      toast.add({ title: "分配失败", description: err, icon: "i-material-symbols:error-circle-rounded-outline-sharp", color: "error" });
+      toast.add({ title: t('person.toast.assignFailed'), description: err, icon: "i-material-symbols:error-circle-rounded-outline-sharp", color: "error" });
     }
   }
   for (const id of toRemove) {
     const err = await removeUserPositionRequest(uid, id);
     if (err) {
       failed = true;
-      toast.add({ title: "取消分配失败", description: err, icon: "i-material-symbols:error-circle-rounded-outline-sharp", color: "error" });
+      toast.add({ title: t('person.toast.unassignFailed'), description: err, icon: "i-material-symbols:error-circle-rounded-outline-sharp", color: "error" });
     }
   }
   savingAssign.value = false;
@@ -154,7 +156,7 @@ async function saveAssign() {
   if (!failed) {
     const data = await fetchUserPositionsRequest(uid);
     positionsMap.value = { ...positionsMap.value, [uid]: data ?? [] };
-    toast.add({ title: "保存成功", description: "职位分配已更新", icon: "i-material-symbols:check-circle-outline", color: "success" });
+    toast.add({ title: t('person.toast.saveSuccess'), description: t('person.toast.assignUpdated'), icon: "i-material-symbols:check-circle-outline", color: "success" });
     assignOpen.value = false;
   }
 }
@@ -165,7 +167,7 @@ const UIcon = resolveComponent('UIcon');
 const UAvatar = resolveComponent('UAvatar');
 const UCheckbox = resolveComponent('UCheckbox');
 
-const columns: TableColumn<User>[] = [
+const columns = computed<TableColumn<User>[]>(() => [
   {
     id: 'select',
     header: ({ table }) =>
@@ -186,7 +188,7 @@ const columns: TableColumn<User>[] = [
   },
   {
     accessorKey: 'avatar',
-    header: '头像',
+    header: t('person.columns.avatar'),
     cell: ({ row }) => {
       return h('div', { class: 'flex items-center gap-3' }, [
         h(UAvatar, {
@@ -202,48 +204,48 @@ const columns: TableColumn<User>[] = [
   },
   {
     accessorKey: 'userName',
-    header: '用户名',
+    header: t('person.columns.userName'),
   },
   {
     accessorKey: 'email',
-    header: '邮箱',
+    header: t('person.columns.email'),
   },
   {
     accessorKey: 'phone',
-    header: '手机',
+    header: t('person.columns.phone'),
   },
   {
     accessorKey: 'city',
-    header: '城市',
+    header: t('person.columns.city'),
   },
   {
     id: 'positions',
-    header: '职位 / 部门',
+    header: t('person.columns.positions'),
     cell: ({ row }) =>
       h('span', { class: 'text-muted' }, positionText(positionsMap.value[row.original.id])),
   },
   {
     accessorKey: 'createdAt',
-    header: '创建时间',
+    header: t('person.columns.createdAt'),
     cell: ({ row }) => {
       return h('div', { class: 'flex items-center space-x-2' }, [h(UIcon, { class: 'size-5', name: 'i-meteor-icons:alarm-clock' }), h('span', row.getValue('createdAt'))]);
     }
   },
   {
     id: 'actions',
-    header: '操作',
+    header: t('person.columns.actions'),
     cell: ({ row }) => {
       if (!can('user.assign')) return null;
       const UButton = resolveComponent('UButton');
       return h(UButton, {
         size: 'xs',
         variant: 'ghost',
-        label: '分配职位',
+        label: t('person.columns.assignPosition'),
         onClick: () => openAssign(row.original),
       });
     },
   },
-];
+]);
 
 loadPositions();
 
@@ -251,19 +253,19 @@ loadPositions();
 </script>
 
 <template>
-  <DashboardPanel title="人员">
+  <DashboardPanel :title="t('person.title')">
     <template v-if="can('user.read')">
       <div class="flex flex-wrap items-center justify-between gap-1.5">
-        <UInput class="max-w-sm" icon="i-lucide-search" placeholder="筛选姓名或邮箱" @update:model-value="filter" />
+        <UInput class="max-w-sm" icon="i-lucide-search" :placeholder="t('person.filterPlaceholder')" @update:model-value="filter" />
         <div class="flex flex-wrap items-center gap-1.5">
-          <UButton v-if="can('user.create')" label="新增人员" icon="i-lucide-plus" @click="openCreate" />
-        <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个人员`" v-model:open="open">
-          <UButton v-if="can('user.delete')" label="删除" color="error" variant="subtle" icon="i-lucide-trash"></UButton>
+          <UButton v-if="can('user.create')" :label="t('person.add')" icon="i-lucide-plus" @click="openCreate" />
+        <UModal :title="t('person.deleteModalTitle', { count: table?.tableApi.getSelectedRowModel().rows.length ?? 0 })" v-model:open="open">
+          <UButton v-if="can('user.delete')" :label="t('person.delete')" color="error" variant="subtle" icon="i-lucide-trash"></UButton>
           <template #body>
-            确定要删除吗，此操作无法撤销？
+            {{ t('person.deleteConfirm') }}
             <div class="flex justify-end gap-2">
-              <UButton label="取消" color="neutral" variant="subtle" @click="open = false" />
-              <UButton label="确定" color="error" variant="solid" loading-auto @click="deleteBatch" />
+              <UButton :label="t('person.cancel')" color="neutral" variant="subtle" @click="open = false" />
+              <UButton :label="t('person.confirm')" color="error" variant="solid" loading-auto @click="deleteBatch" />
             </div>
           </template>
         </UModal>
@@ -281,25 +283,25 @@ loadPositions();
     </div>
 
     <!-- 新增人员 -->
-    <UModal v-model:open="createOpen" title="新增人员">
+    <UModal v-model:open="createOpen" :title="t('person.create.title')">
       <template #body>
         <div class="flex flex-col gap-3">
-          <UFormField label="邮箱" required>
-            <UInput v-model="createForm.email" placeholder="请输入邮箱" class="w-full" />
+          <UFormField :label="t('person.create.email')" required>
+            <UInput v-model="createForm.email" :placeholder="t('person.create.emailPlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="密码" required>
-            <UInput v-model="createForm.password" type="password" placeholder="请输入初始密码" class="w-full" />
+          <UFormField :label="t('person.create.password')" required>
+            <UInput v-model="createForm.password" type="password" :placeholder="t('person.create.passwordPlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="昵称">
-            <UInput v-model="createForm.nickName" placeholder="昵称" class="w-full" />
+          <UFormField :label="t('person.create.nickName')">
+            <UInput v-model="createForm.nickName" :placeholder="t('person.create.nickNamePlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="手机">
-            <UInput v-model="createForm.phone" placeholder="手机" class="w-full" />
+          <UFormField :label="t('person.create.phone')">
+            <UInput v-model="createForm.phone" :placeholder="t('person.create.phonePlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="城市">
-            <UInput v-model="createForm.city" placeholder="城市" class="w-full" />
+          <UFormField :label="t('person.create.city')">
+            <UInput v-model="createForm.city" :placeholder="t('person.create.cityPlaceholder')" class="w-full" />
           </UFormField>
-          <UFormField label="头像">
+          <UFormField :label="t('person.create.avatar')">
             <UInput type="file" @change="(e: Event) => {
               const target = e.target as HTMLInputElement;
               createAvatar = target.files ? target.files[0] : null;
@@ -309,16 +311,16 @@ loadPositions();
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton label="取消" color="neutral" variant="subtle" @click="createOpen = false" />
-          <UButton label="保存" color="primary" :loading="creating" @click="submitCreate" />
+          <UButton :label="t('person.cancel')" color="neutral" variant="subtle" @click="createOpen = false" />
+          <UButton :label="t('person.save')" color="primary" :loading="creating" @click="submitCreate" />
         </div>
       </template>
     </UModal>
 
     <!-- 分配职位 -->
-    <UModal v-model:open="assignOpen" :title="`为「${assignTarget?.nickName ?? ''}」分配职位`">
+    <UModal v-model:open="assignOpen" :title="t('person.assign.title', { name: assignTarget?.nickName ?? '' })">
       <template #body>
-        <div v-if="positionOptions.length === 0" class="text-muted">暂无职位</div>
+        <div v-if="positionOptions.length === 0" class="text-muted">{{ t('person.assign.empty') }}</div>
         <div class="flex flex-col gap-1 max-h-80 overflow-auto">
           <UCheckbox
             v-for="opt in positionOptions"
@@ -331,8 +333,8 @@ loadPositions();
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton label="取消" color="neutral" variant="subtle" @click="assignOpen = false" />
-          <UButton label="保存" color="primary" :loading="savingAssign" @click="saveAssign" />
+          <UButton :label="t('person.cancel')" color="neutral" variant="subtle" @click="assignOpen = false" />
+          <UButton :label="t('person.save')" color="primary" :loading="savingAssign" @click="saveAssign" />
         </div>
       </template>
     </UModal>
@@ -340,7 +342,7 @@ loadPositions();
     <template v-else>
       <div class="flex flex-col items-center justify-center py-16 text-muted">
         <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
-        <p class="text-lg">您没有访问此页面的权限</p>
+        <p class="text-lg">{{ t('person.noPermission') }}</p>
       </div>
     </template>
   </DashboardPanel>

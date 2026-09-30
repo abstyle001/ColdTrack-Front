@@ -1,4 +1,5 @@
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Position } from "../utils/types";
 import {
   fetchPositionPageRequest,
@@ -16,6 +17,7 @@ export function usePosition() {
   const positionCount = ref(0);
 
   const toast = useToast();
+  const { t } = useI18n();
 
   async function fetchPositions(pageNumber: number = 1) {
     loading.value = true;
@@ -33,16 +35,16 @@ export function usePosition() {
     const { err, data } = await createPositionRequest(payload);
     if (err) {
       toast.add({
-        title: "创建失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("position.toast.createFailed"),
+        description: typeof err === "string" ? err : t("api.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return null;
     }
     toast.add({
-      title: "创建成功",
-      description: `职位「${data?.name}」已创建`,
+      title: t("position.toast.createSuccess"),
+      description: t("position.toast.created", { name: data?.name }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -54,16 +56,16 @@ export function usePosition() {
     const { err, data } = await updatePositionRequest(payload);
     if (err) {
       toast.add({
-        title: "更新失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("position.toast.updateFailed"),
+        description: typeof err === "string" ? err : t("api.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return null;
     }
     toast.add({
-      title: "更新成功",
-      description: `职位「${data?.name}」已更新`,
+      title: t("position.toast.updateSuccess"),
+      description: t("position.toast.updated", { name: data?.name }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -75,16 +77,16 @@ export function usePosition() {
     const err = await deletePositionRequest(id);
     if (err) {
       toast.add({
-        title: "删除失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("position.toast.deleteFailed"),
+        description: typeof err === "string" ? err : t("api.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return false;
     }
     toast.add({
-      title: "删除成功",
-      description: "职位已删除",
+      title: t("position.toast.deleteSuccess"),
+      description: t("position.toast.deleted"),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
