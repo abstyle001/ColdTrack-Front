@@ -26,6 +26,12 @@ const cards = ref([
     to: '/department'
   },
   {
+    title: '项目',
+    description: '项目列表，项目管理',
+    icon: 'i-ant-design:project-filled',
+    to: '/project'
+  },
+  {
     title: '任务',
     description: '任务列表，任务分配，任务进度，任务状态管理。',
     icon: 'i-material-symbols:task',
