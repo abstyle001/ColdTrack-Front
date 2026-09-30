@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Task } from '../utils/types';
 import { updateTaskStatusRequest } from '../api/userApi';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   tasks: Task[];
@@ -25,12 +28,12 @@ const emit = defineEmits<{
   (e: 'statusChanged'): void;
 }>();
 
-const columns = [
-  { key: 'Todo', label: '待办', color: 'text-muted' },
-  { key: 'InProgress', label: '进行中', color: 'text-info' },
-  { key: 'Review', label: '审核', color: 'text-warning' },
-  { key: 'Completed', label: '已完成', color: 'text-success' },
-] as const;
+const columns = computed(() => [
+  { key: 'Todo', label: t('task.status.todo'), color: 'text-muted' },
+  { key: 'InProgress', label: t('task.status.inProgress'), color: 'text-info' },
+  { key: 'Review', label: t('task.status.review'), color: 'text-warning' },
+  { key: 'Completed', label: t('task.status.completed'), color: 'text-success' },
+] as const);
 
 const priorityColor: Record<string, string> = {
   Low: 'bg-muted',
@@ -39,12 +42,12 @@ const priorityColor: Record<string, string> = {
   Urgent: 'bg-error',
 };
 
-const priorityLabel: Record<string, string> = {
-  Low: '低',
-  Medium: '中',
-  High: '高',
-  Urgent: '紧急',
-};
+const priorityLabel = computed<Record<string, string>>(() => ({
+  Low: t('task.priority.low'),
+  Medium: t('task.priority.medium'),
+  High: t('task.priority.high'),
+  Urgent: t('task.priority.urgent'),
+}));
 
 const draggingId = ref<number | null>(null);
 
@@ -80,7 +83,7 @@ async function onDrop(e: DragEvent, targetStatus: string) {
   const toast = useToast();
   if (result.err) {
     toast.add({
-      title: '状态更新失败',
+      title: t('task.toast.statusUpdateFailed'),
       description: result.err,
       icon: 'i-material-symbols:error-circle-rounded-outline-sharp',
       color: 'error',
@@ -88,8 +91,8 @@ async function onDrop(e: DragEvent, targetStatus: string) {
     return;
   }
   toast.add({
-    title: '状态更新成功',
-    description: '任务状态已更新',
+    title: t('task.toast.statusUpdateSuccess'),
+    description: t('task.toast.taskStatusUpdated'),
     icon: 'i-material-symbols:check-circle-outline',
     color: 'success',
   });
@@ -143,7 +146,7 @@ function countByStatus(key: string) {
                 variant="ghost"
                 color="neutral"
                 class="size-6"
-                aria-label="查看详情"
+                :aria-label="t('task.kanban.viewDetail')"
                 @click.stop="emit('detail', task)"
               />
               <UButton
@@ -205,7 +208,7 @@ function countByStatus(key: string) {
           class="flex flex-col items-center justify-center py-8 text-muted/50 text-xs"
         >
           <UIcon name="i-lucide-inbox" class="size-6 mb-1" />
-          拖拽任务到此处
+          {{ t('task.kanban.dragHere') }}
         </div>
       </div>
     </div>

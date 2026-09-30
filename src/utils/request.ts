@@ -1,8 +1,11 @@
-﻿import axios, {
+import axios, {
   AxiosError,
   type AxiosResponse,
 } from "axios";
 import { Status } from "./types";
+import { i18n } from "../i18n";
+
+const t = i18n.global.t;
 
 const API_BASE_URL = "/api";
 
@@ -66,16 +69,16 @@ async function request<T>(
         return [null, response.data as T];
       }
     }
-    return ["服务器错误", null];
+    return [t("api.serverError"), null];
   } catch (error: AxiosError | unknown) {
     if (error instanceof AxiosError && error.response?.status === Status.UN_AUTHORIZED) {
-      return ["请先登录", null];
+      return [t("api.unauthorized"), null];
     }
     if (error instanceof AxiosError && error.response?.status === Status.FORBIDDEN) {
-      return ["没有权限", null];
+      return [t("api.forbidden"), null];
     }
     return [
-      error instanceof AxiosError ? error.response?.data : "服务器错误",
+      error instanceof AxiosError ? error.response?.data : t("api.serverError"),
       null,
     ];
   }

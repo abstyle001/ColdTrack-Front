@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, ref, resolveComponent, useTemplateRef, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { parseDateTime, toCalendarDate, toTime } from '@internationalized/date';
 import type { CalendarDateTime } from '@internationalized/date';
 import type { Task, Tag } from '../utils/types';
@@ -21,6 +22,7 @@ import {
   deleteTagRequest,
 } from '../api/userApi';
 
+const { t } = useI18n();
 const { can } = usePermission();
 const userStore = useUserStore();
 const route = useRoute();
@@ -63,19 +65,19 @@ const canCreateTask = computed(() => can('task.create') || managedProjectIds.val
 const canEditTask = (task: Task) => can('task.update') || managedProjectIds.value.includes(task.projectId);
 const canDeleteTask = (task: Task) => can('task.delete') || managedProjectIds.value.includes(task.projectId);
 
-const statusOptions = [
-  { label: '待办', value: 'Todo' },
-  { label: '进行中', value: 'InProgress' },
-  { label: '审核', value: 'Review' },
-  { label: '已完成', value: 'Completed' },
-];
+const statusOptions = computed(() => [
+  { label: t('task.status.todo'), value: 'Todo' },
+  { label: t('task.status.inProgress'), value: 'InProgress' },
+  { label: t('task.status.review'), value: 'Review' },
+  { label: t('task.status.completed'), value: 'Completed' },
+]);
 
-const priorityOptions = [
-  { label: '低', value: 'Low' },
-  { label: '中', value: 'Medium' },
-  { label: '高', value: 'High' },
-  { label: '紧急', value: 'Urgent' },
-];
+const priorityOptions = computed(() => [
+  { label: t('task.priority.low'), value: 'Low' },
+  { label: t('task.priority.medium'), value: 'Medium' },
+  { label: t('task.priority.high'), value: 'High' },
+  { label: t('task.priority.urgent'), value: 'Urgent' },
+]);
 
 const projectOptions = computed(() =>
   projectList.value.map((p) => ({ label: p.name, value: p.id }))
@@ -99,15 +101,15 @@ const tagOptions = computed(() =>
 
 // 注意：Reka UI 的 SelectItem 不允许空字符串 value（会抛错并锁死页面点击），
 // 「默认」用哨兵值 'default'，变更时映射回空字符串
-const tagColorOptions = [
-  { label: '默认', value: 'default' },
-  { label: '主色', value: 'primary' },
-  { label: '中性', value: 'neutral' },
-  { label: '信息', value: 'info' },
-  { label: '成功', value: 'success' },
-  { label: '警告', value: 'warning' },
-  { label: '错误', value: 'error' },
-];
+const tagColorOptions = computed(() => [
+  { label: t('task.tagColor.default'), value: 'default' },
+  { label: t('task.tagColor.primary'), value: 'primary' },
+  { label: t('task.tagColor.neutral'), value: 'neutral' },
+  { label: t('task.tagColor.info'), value: 'info' },
+  { label: t('task.tagColor.success'), value: 'success' },
+  { label: t('task.tagColor.warning'), value: 'warning' },
+  { label: t('task.tagColor.error'), value: 'error' },
+]);
 
 // ===== 创建 / 编辑弹窗 =====
 const formOpen = ref(false);
@@ -241,8 +243,8 @@ async function submitForm() {
   if (!form.value.title || formSaving.value) return;
   if (!form.value.projectId) {
     toast.add({
-      title: "提示",
-      description: "请选择所属项目",
+      title: t('task.toast.tip'),
+      description: t('task.toast.selectProject'),
       icon: "i-material-symbols:error-circle-rounded-outline-sharp",
       color: "error",
     });
@@ -269,7 +271,7 @@ async function submitForm() {
   formSaving.value = false;
   if (err) {
     toast.add({
-      title: "操作失败",
+      title: t('task.toast.operationFailed'),
       description: err,
       icon: "i-material-symbols:error-circle-rounded-outline-sharp",
       color: "error",
@@ -277,8 +279,8 @@ async function submitForm() {
     return;
   }
   toast.add({
-    title: editTarget.value ? "更新成功" : "创建成功",
-    description: editTarget.value ? "任务已更新" : "新任务已创建",
+    title: editTarget.value ? t('task.toast.updateSuccess') : t('task.toast.createSuccess'),
+    description: editTarget.value ? t('task.toast.taskUpdated') : t('task.toast.taskCreated'),
     icon: "i-material-symbols:check-circle-outline",
     color: "success",
   });
@@ -301,7 +303,7 @@ async function doDelete() {
   const err = await deleteTaskRequest(deleteTarget.value.id);
   if (err) {
     toast.add({
-      title: "删除失败",
+      title: t('task.toast.deleteFailed'),
       description: err,
       icon: "i-material-symbols:error-circle-rounded-outline-sharp",
       color: "error",
@@ -309,8 +311,8 @@ async function doDelete() {
     return;
   }
   toast.add({
-    title: "删除成功",
-    description: "任务已删除",
+    title: t('task.toast.deleteSuccess'),
+    description: t('task.toast.taskDeleted'),
     icon: "i-material-symbols:check-circle-outline",
     color: "success",
   });
@@ -326,12 +328,12 @@ const statusColor: Record<string, string> = {
   Review: 'warning',
   Completed: 'success',
 };
-const statusLabel: Record<string, string> = {
-  Todo: '待办',
-  InProgress: '进行中',
-  Review: '审核',
-  Completed: '已完成',
-};
+const statusLabel = computed<Record<string, string>>(() => ({
+  Todo: t('task.status.todo'),
+  InProgress: t('task.status.inProgress'),
+  Review: t('task.status.review'),
+  Completed: t('task.status.completed'),
+}));
 
 const priorityColor: Record<string, string> = {
   Low: 'neutral',
@@ -339,12 +341,12 @@ const priorityColor: Record<string, string> = {
   High: 'warning',
   Urgent: 'error',
 };
-const priorityLabel: Record<string, string> = {
-  Low: '低',
-  Medium: '中',
-  High: '高',
-  Urgent: '紧急',
-};
+const priorityLabel = computed<Record<string, string>>(() => ({
+  Low: t('task.priority.low'),
+  Medium: t('task.priority.medium'),
+  High: t('task.priority.high'),
+  Urgent: t('task.priority.urgent'),
+}));
 
 function formatTime(d: any): string {
   if (!d) return '00:00';
@@ -407,10 +409,10 @@ async function addTag() {
   const r = await createTagRequest({ name, color: newTagColor.value || undefined });
   tagSaving.value = false;
   if (r.err) {
-    toast.add({ title: '创建失败', description: r.err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    toast.add({ title: t('task.toast.createTagFailed'), description: r.err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
     return;
   }
-  toast.add({ title: '创建成功', description: '标签已创建', icon: 'i-material-symbols:check-circle-outline', color: 'success' });
+  toast.add({ title: t('task.toast.createSuccess'), description: t('task.toast.tagCreated'), icon: 'i-material-symbols:check-circle-outline', color: 'success' });
   newTagName.value = '';
   newTagColor.value = '';
   fetchTags();
@@ -426,17 +428,17 @@ async function saveEditTag() {
   if (editingTagId.value === null || tagSaving.value) return;
   const name = editingTagName.value.trim();
   if (!name) {
-    toast.add({ title: '更新失败', description: '标签名称不能为空', icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    toast.add({ title: t('task.toast.updateTagFailed'), description: t('task.toast.tagNameRequired'), icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
     return;
   }
   tagSaving.value = true;
   const r = await updateTagRequest(editingTagId.value, { name, color: editingTagColor.value || undefined });
   tagSaving.value = false;
   if (r.err) {
-    toast.add({ title: '更新失败', description: r.err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    toast.add({ title: t('task.toast.updateTagFailed'), description: r.err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
     return;
   }
-  toast.add({ title: '更新成功', description: '标签已更新', icon: 'i-material-symbols:check-circle-outline', color: 'success' });
+  toast.add({ title: t('task.toast.updateSuccess'), description: t('task.toast.tagUpdated'), icon: 'i-material-symbols:check-circle-outline', color: 'success' });
   editingTagId.value = null;
   fetchTags();
 }
@@ -447,16 +449,16 @@ async function removeTag(id: number) {
   const err = await deleteTagRequest(id);
   tagSaving.value = false;
   if (err) {
-    toast.add({ title: '删除失败', description: err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
+    toast.add({ title: t('task.toast.deleteFailed'), description: err, icon: 'i-material-symbols:error-circle-rounded-outline-sharp', color: 'error' });
     return;
   }
-  toast.add({ title: '删除成功', description: '标签已删除', icon: 'i-material-symbols:check-circle-outline', color: 'success' });
+  toast.add({ title: t('task.toast.deleteSuccess'), description: t('task.toast.tagDeleted'), icon: 'i-material-symbols:check-circle-outline', color: 'success' });
   if (editingTagId.value === id) editingTagId.value = null;
   fetchTags();
 }
 
 
-const columns: TableColumn<Task>[] = [
+const columns = computed<TableColumn<Task>[]>(() => [
   {
     id: 'select',
     header: ({ table }) =>
@@ -477,11 +479,11 @@ const columns: TableColumn<Task>[] = [
   },
   {
     accessorKey: 'title',
-    header: '标题',
+    header: t('task.table.title'),
     cell: ({ row }) => {
       return h('div', { class: 'flex items-center gap-2' }, [
         h(UBadge, {
-          label: statusLabel[row.original.status] || row.original.status,
+          label: statusLabel.value[row.original.status] || row.original.status,
           color: statusColor[row.original.status] || 'neutral',
           variant: 'solid',
           size: 'xs',
@@ -492,7 +494,7 @@ const columns: TableColumn<Task>[] = [
   },
   {
     id: 'project',
-    header: '项目',
+    header: t('task.table.project'),
     cell: ({ row }) => {
       const name = row.original.projectName;
       if (!name) return h('span', { class: 'text-muted' }, '—');
@@ -501,7 +503,7 @@ const columns: TableColumn<Task>[] = [
   },
   {
     id: 'assignee',
-    header: '负责人',
+    header: t('task.table.assignee'),
     cell: ({ row }) => {
       const name = row.original.assigneeName || '—';
       return h('span', { class: row.original.assigneeName ? '' : 'text-muted' }, name);
@@ -509,10 +511,10 @@ const columns: TableColumn<Task>[] = [
   },
   {
     id: 'priority',
-    header: '优先级',
+    header: t('task.table.priority'),
     cell: ({ row }) => {
       return h(UBadge, {
-        label: priorityLabel[row.original.priority] || row.original.priority,
+        label: priorityLabel.value[row.original.priority] || row.original.priority,
         color: priorityColor[row.original.priority] || 'neutral',
         variant: 'soft',
         size: 'xs',
@@ -521,7 +523,7 @@ const columns: TableColumn<Task>[] = [
   },
   {
     id: 'tags',
-    header: '标签',
+    header: t('task.table.tags'),
     cell: ({ row }) => {
       const tags = row.original.tags ?? [];
       if (tags.length === 0) return h('span', { class: 'text-muted' }, '—');
@@ -531,7 +533,7 @@ const columns: TableColumn<Task>[] = [
   },
   {
     accessorKey: 'deadline',
-    header: '截止日期',
+    header: t('task.table.deadline'),
     cell: ({ row }) => {
       const deadline = row.original.deadline;
       if (!deadline) return h('span', { class: 'text-muted' }, '—');
@@ -544,13 +546,13 @@ const columns: TableColumn<Task>[] = [
   },
   {
     accessorKey: 'creatorName',
-    header: '创建人',
+    header: t('task.table.creator'),
     cell: ({ row }) =>
       h('span', { class: 'text-muted' }, row.original.creatorName || '—'),
   },
   {
     accessorKey: 'createdAt',
-    header: '创建时间',
+    header: t('task.table.createdAt'),
     cell: ({ row }) => {
       return h('div', { class: 'flex items-center space-x-2' }, [
         h(UIcon, { class: 'size-5', name: 'i-meteor-icons:alarm-clock' }),
@@ -561,55 +563,55 @@ const columns: TableColumn<Task>[] = [
   // Operations via template slot below (id: 'actions')
   {
     id: 'actions',
-    header: '操作',
+    header: t('task.table.actions'),
   },
-];
+]);
 </script>
 
 <template>
-  <DashboardPanel title="任务管理">
+  <DashboardPanel :title="t('task.title')">
     <template v-if="can('task.read')">
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <div class="flex flex-wrap items-center gap-2">
-          <UInput class="max-w-sm" icon="i-lucide-search" placeholder="筛选标题或描述" @update:model-value="filter" />
+          <UInput class="max-w-sm" icon="i-lucide-search" :placeholder="t('task.filter.searchPlaceholder')" @update:model-value="filter" />
           <USelect
             v-model="projectFilter"
             :items="projectFilterOptions"
-            placeholder="按项目筛选"
+            :placeholder="t('task.filter.project')"
             class="w-40"
             @update:model-value="onProjectFilterChange"
           />
           <USelect
             v-model="statusFilter"
             :items="statusOptions"
-            placeholder="按状态筛选"
+            :placeholder="t('task.filter.status')"
             class="w-32"
             @update:model-value="applyFilter()"
           />
           <USelect
             v-model="priorityFilter"
             :items="priorityOptions"
-            placeholder="按优先级筛选"
+            :placeholder="t('task.filter.priority')"
             class="w-32"
             @update:model-value="applyFilter()"
           />
           <USelect
             v-model="tagFilter"
             :items="tagOptions"
-            placeholder="按标签筛选"
+            :placeholder="t('task.filter.tag')"
             class="w-32"
             @update:model-value="applyFilter()"
           />
           <div class="inline-flex rounded-md border border-default overflow-hidden ml-2">
-            <button type="button" :class="viewMode === 'table' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'table'">表格</button>
-            <button type="button" :class="viewMode === 'kanban' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'kanban'; fetchAllTasks()">看板</button>
+            <button type="button" :class="viewMode === 'table' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'table'">{{ t('task.view.table') }}</button>
+            <button type="button" :class="viewMode === 'kanban' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'kanban'; fetchAllTasks()">{{ t('task.view.kanban') }}</button>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
-          <UButton v-if="canCreateTask" label="新建任务" icon="i-lucide-plus" @click="openCreate" />
-          <UButton v-if="can('tag.create')" label="管理标签" icon="i-lucide-tag" variant="outline" @click="openTagManage" />
+          <UButton v-if="canCreateTask" :label="t('task.action.create')" icon="i-lucide-plus" @click="openCreate" />
+          <UButton v-if="can('tag.create')" :label="t('task.action.manageTags')" icon="i-lucide-tag" variant="outline" @click="openTagManage" />
           <UPopover v-if="(can('task.update') || managedProjectIds.length > 0) && viewMode === 'table'" v-model:open="batchStatusOpen">
-            <UButton variant="outline" label="批量改状态" icon="i-lucide-list-checks" />
+            <UButton variant="outline" :label="t('task.action.batchStatus')" icon="i-lucide-list-checks" />
             <template #content>
               <div class="flex flex-col gap-1 p-2">
                 <UButton
@@ -623,13 +625,13 @@ const columns: TableColumn<Task>[] = [
               </div>
             </template>
           </UPopover>
-          <UButton v-if="can('task.delete') || managedProjectIds.length > 0" label="删除" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
-          <UModal :title="`删除${table?.tableApi.getSelectedRowModel().rows.length}个任务`" v-model:open="open">
+          <UButton v-if="can('task.delete') || managedProjectIds.length > 0" :label="t('task.action.delete')" color="error" variant="subtle" icon="i-lucide-trash"  @click="open = true" />
+          <UModal :title="t('task.deleteModal.batchTitle', { count: table?.tableApi.getSelectedRowModel().rows.length ?? 0 })" v-model:open="open">
             <template #body>
-              确定要删除吗，此操作无法撤销！
+              {{ t('task.deleteModal.batchConfirm') }}
               <div class="flex justify-end gap-2">
-                <UButton label="取消" color="neutral" variant="subtle" @click="open = false" />
-                <UButton label="确定" color="error" variant="solid" loading-auto @click="deleteBatch" />
+                <UButton :label="t('task.action.cancel')" color="neutral" variant="subtle" @click="open = false" />
+                <UButton :label="t('task.action.confirm')" color="error" variant="solid" loading-auto @click="deleteBatch" />
               </div>
             </template>
           </UModal>
@@ -651,7 +653,7 @@ const columns: TableColumn<Task>[] = [
             <UButton
               size="xs"
               variant="ghost"
-              label="详情"
+              :label="t('task.action.detail')"
               icon="i-lucide-eye"
               @click="openDetail(row.original)"
             />
@@ -659,7 +661,7 @@ const columns: TableColumn<Task>[] = [
               v-if="canEditTask(row.original)"
               size="xs"
               variant="ghost"
-              label="编辑"
+              :label="t('task.action.edit')"
               @click="openEdit(row.original)"
             />
             <UButton
@@ -667,7 +669,7 @@ const columns: TableColumn<Task>[] = [
               size="xs"
               variant="ghost"
               color="error"
-              label="删除"
+              :label="t('task.action.delete')"
               @click="confirmDelete(row.original)"
             />
           </div>
@@ -684,40 +686,40 @@ const columns: TableColumn<Task>[] = [
       </div>
 
       <div v-if="viewMode === 'kanban'" class="flex-1">
-        <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">加载中...</div>
+        <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">{{ t('task.loading') }}</div>
         <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" :managedProjectIds="managedProjectIds" @edit="openEdit" @delete="confirmDelete" @detail="openDetail" @statusChanged="handleKanbanStatusChanged" />
       </div>
 
       <!-- 新建 / 编辑任务 -->
-      <UModal v-model:open="formOpen" :title="editTarget ? '编辑任务' : '新建任务'" size="xl">
+      <UModal v-model:open="formOpen" :title="editTarget ? t('task.form.editTitle') : t('task.form.createTitle')" size="xl">
         <template #body>
           <div class="flex flex-col gap-3">
-            <UFormField label="标题" required>
-              <UInput v-model="form.title" placeholder="请输入任务标题" class="w-full" />
+            <UFormField :label="t('task.form.title')" required>
+              <UInput v-model="form.title" :placeholder="t('task.form.titlePlaceholder')" class="w-full" />
             </UFormField>
-            <UFormField label="描述">
-              <UTextarea v-model="form.description" placeholder="任务描述（可选）" class="w-full" :rows="3" />
+            <UFormField :label="t('task.form.description')">
+              <UTextarea v-model="form.description" :placeholder="t('task.form.descriptionPlaceholder')" class="w-full" :rows="3" />
             </UFormField>
-            <UFormField label="所属项目" required>
+            <UFormField :label="t('task.form.project')" required>
               <USelect
                 v-model="form.projectId"
                 :items="formProjectOptions"
-                placeholder="选择所属项目"
+                :placeholder="t('task.form.projectPlaceholder')"
                 class="w-full"
                 @update:model-value="onFormProjectChange"
               />
             </UFormField>
-            <UFormField label="负责人">
+            <UFormField :label="t('task.form.assignee')">
               <USelect
                 v-model="form.assigneeId"
                 :items="memberOptions"
-                :placeholder="form.projectId ? '选择负责人（须为项目成员）' : '请先选择所属项目'"
+                :placeholder="form.projectId ? t('task.form.assigneePlaceholder') : t('task.form.assigneeNoProject')"
                 :disabled="!form.projectId"
                 class="w-full"
               />
             </UFormField>
             <div class="flex gap-3">
-              <UFormField label="优先级" class="flex-1">
+              <UFormField :label="t('task.form.priority')" class="flex-1">
                 <USelect
                   v-model="form.priority"
                   :items="priorityOptions"
@@ -725,9 +727,9 @@ const columns: TableColumn<Task>[] = [
                 />
               </UFormField>
             </div>
-            <UFormField label="标签">
+            <UFormField :label="t('task.form.tags')">
               <div v-if="tagList.length === 0" class="text-sm text-muted">
-                暂无标签，可先在「管理标签」中创建
+                {{ t('task.form.noTagsHint') }}
               </div>
               <div v-else class="flex flex-col gap-1 max-h-40 overflow-auto rounded-md border border-default p-2">
                 <UCheckbox
@@ -740,7 +742,7 @@ const columns: TableColumn<Task>[] = [
               </div>
             </UFormField>
             <div class="flex gap-3">
-              <UFormField label="截止日期">
+              <UFormField :label="t('task.form.deadline')">
                 <UInputDate v-model="deadlineDate">
                   <template #trailing>
                     <UPopover v-model:open="popoverOpen">
@@ -752,11 +754,11 @@ const columns: TableColumn<Task>[] = [
                   </template>
                 </UInputDate>
               </UFormField>
-              <UFormField label="时间" class="w-28">
+              <UFormField :label="t('task.form.time')" class="w-28">
                 <UInputTime v-model="deadlineTime" />
               </UFormField>
             </div>
-            <UFormField v-if="editTarget" label="状态">
+            <UFormField v-if="editTarget" :label="t('task.form.status')">
               <USelect
                 v-model="form.status"
                 :items="statusOptions"
@@ -767,55 +769,55 @@ const columns: TableColumn<Task>[] = [
         </template>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton label="取消" color="neutral" variant="subtle" @click="formOpen = false" />
-            <UButton label="保存" color="primary" :loading="formSaving" @click="submitForm" />
+            <UButton :label="t('task.action.cancel')" color="neutral" variant="subtle" @click="formOpen = false" />
+            <UButton :label="t('task.action.save')" color="primary" :loading="formSaving" @click="submitForm" />
           </div>
         </template>
       </UModal>
 
       <!-- 删除确认 -->
-      <UModal v-model:open="deleteOpen" title="删除任务">
+      <UModal v-model:open="deleteOpen" :title="t('task.deleteModal.title')">
         <template #body>
-          确定要删除任务「{{ deleteTarget?.title }}」吗，此操作无法撤销！
+          {{ t('task.deleteModal.confirm', { title: deleteTarget?.title ?? '' }) }}
           <div class="flex justify-end gap-2 mt-4">
-            <UButton label="取消" color="neutral" variant="subtle" @click="deleteOpen = false" />
-            <UButton label="确定" color="error" variant="solid" @click="doDelete" />
+            <UButton :label="t('task.action.cancel')" color="neutral" variant="subtle" @click="deleteOpen = false" />
+            <UButton :label="t('task.action.confirm')" color="error" variant="solid" @click="doDelete" />
           </div>
         </template>
       </UModal>
 
       <!-- 管理标签 -->
-      <UModal v-model:open="tagManageOpen" title="管理标签" size="md">
+      <UModal v-model:open="tagManageOpen" :title="t('task.tagManage.title')" size="md">
         <template #body>
           <div class="flex flex-col gap-3">
-            <div v-if="tagList.length === 0" class="text-sm text-muted">暂无标签</div>
+            <div v-if="tagList.length === 0" class="text-sm text-muted">{{ t('task.tagManage.empty') }}</div>
             <div class="flex flex-col gap-2 max-h-64 overflow-auto">
               <div v-for="tag in tagList" :key="tag.id" class="flex items-center gap-2">
                 <template v-if="editingTagId === tag.id">
-                  <UInput v-model="editingTagName" class="flex-1" placeholder="标签名称" />
+                  <UInput v-model="editingTagName" class="flex-1" :placeholder="t('task.tagManage.namePlaceholder')" />
                   <USelect :model-value="editingTagColor || 'default'" :items="tagColorOptions" class="w-28" @update:model-value="editingTagColor = $event === 'default' ? '' : String($event ?? '')" />
-                  <UButton size="xs" color="primary" icon="i-lucide-check" aria-label="保存" @click="saveEditTag" />
-                  <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" aria-label="取消" @click="editingTagId = null" />
+                  <UButton size="xs" color="primary" icon="i-lucide-check" :aria-label="t('task.tagManage.saveAria')" @click="saveEditTag" />
+                  <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" :aria-label="t('task.tagManage.cancelAria')" @click="editingTagId = null" />
                 </template>
                 <template v-else>
                   <UBadge :label="tag.name" :color="tag.color || 'neutral'" variant="soft" size="sm" />
                   <div class="flex-1" />
-                  <UButton v-if="can('tag.update')" size="xs" variant="ghost" color="neutral" icon="i-lucide-pencil" aria-label="重命名" @click="startEditTag(tag)" />
-                  <UButton v-if="can('tag.delete')" size="xs" variant="ghost" color="error" icon="i-lucide-trash" aria-label="删除" @click="removeTag(tag.id)" />
+                  <UButton v-if="can('tag.update')" size="xs" variant="ghost" color="neutral" icon="i-lucide-pencil" :aria-label="t('task.tagManage.renameAria')" @click="startEditTag(tag)" />
+                  <UButton v-if="can('tag.delete')" size="xs" variant="ghost" color="error" icon="i-lucide-trash" :aria-label="t('task.tagManage.deleteAria')" @click="removeTag(tag.id)" />
                 </template>
               </div>
             </div>
             <USeparator />
             <div v-if="can('tag.create')" class="flex items-center gap-2">
-              <UInput v-model="newTagName" class="flex-1" placeholder="新标签名称" />
+              <UInput v-model="newTagName" class="flex-1" :placeholder="t('task.tagManage.newPlaceholder')" />
               <USelect :model-value="newTagColor || 'default'" :items="tagColorOptions" class="w-28" @update:model-value="newTagColor = $event === 'default' ? '' : String($event ?? '')" />
-              <UButton size="sm" color="primary" label="添加" :loading="tagSaving" @click="addTag" />
+              <UButton size="sm" color="primary" :label="t('task.action.add')" :loading="tagSaving" @click="addTag" />
             </div>
           </div>
         </template>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton label="关闭" color="neutral" variant="subtle" @click="tagManageOpen = false" />
+            <UButton :label="t('task.action.close')" color="neutral" variant="subtle" @click="tagManageOpen = false" />
           </div>
         </template>
       </UModal>
@@ -827,7 +829,7 @@ const columns: TableColumn<Task>[] = [
     <template v-else>
       <div class="flex flex-col items-center justify-center py-16 text-muted">
         <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
-        <p class="text-lg">您没有访问此页面的权限</p>
+        <p class="text-lg">{{ t('task.noPermission') }}</p>
       </div>
     </template>
   </DashboardPanel>

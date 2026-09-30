@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, h, resolveComponent, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePermission } from "../logic/usePermission";
 import {
   fetchRolesRequest,
@@ -17,6 +18,7 @@ import UserTransfer from "../components/UserTransfer.vue";
 
 const toast = useToast();
 const { can } = usePermission();
+const { t } = useI18n();
 
 const roles = ref<Role[]>([]);
 const permissionCatalog = ref<Permission[]>([]);
@@ -49,10 +51,10 @@ async function submitCreate() {
   const { err } = await createRoleRequest(createName.value.trim());
   creating.value = false;
   if (err) {
-    toast.add({ title: "创建失败", description: err, color: "error" });
+    toast.add({ title: t("rolePermission.toast.createFailed"), description: err, color: "error" });
     return;
   }
-  toast.add({ title: "角色已创建", color: "success" });
+  toast.add({ title: t("rolePermission.toast.roleCreated"), color: "success" });
   createOpen.value = false;
   await loadRoles();
 }
@@ -84,10 +86,10 @@ async function savePerms() {
   );
   savingPerms.value = false;
   if (err) {
-    toast.add({ title: "保存失败", description: err, color: "error" });
+    toast.add({ title: t("rolePermission.toast.saveFailed"), description: err, color: "error" });
     return;
   }
-  toast.add({ title: "权限已更新，变更立即生效", color: "success" });
+  toast.add({ title: t("rolePermission.toast.permsUpdated"), color: "success" });
   permOpen.value = false;
   await loadRoles();
 }
@@ -109,10 +111,10 @@ async function handleAddUsers(userIds: string[]) {
   for (const uid of userIds) {
     const err = await addUserToRoleRequest(userTarget.value.id, uid);
     if (err) {
-      toast.add({ title: "添加失败", description: err, color: "error" });
+      toast.add({ title: t("rolePermission.toast.addFailed"), description: err, color: "error" });
     }
   }
-  toast.add({ title: `已添加 ${userIds.length} 位用户`, color: "success" });
+  toast.add({ title: t("rolePermission.toast.addedUsers", { count: userIds.length }), color: "success" });
   roleUsers.value = (await fetchRoleUsersRequest(userTarget.value.id)) ?? [];
   savingUsers.value = false;
 }
@@ -122,9 +124,9 @@ async function handleRemoveUser(userId: string) {
   savingUsers.value = true;
   const err = await removeUserFromRoleRequest(userTarget.value.id, userId);
   if (err) {
-    toast.add({ title: "移除失败", description: err, color: "error" });
+    toast.add({ title: t("rolePermission.toast.removeFailed"), description: err, color: "error" });
   } else {
-    toast.add({ title: "已移除，权限立即失效", color: "success" });
+    toast.add({ title: t("rolePermission.toast.removed"), color: "success" });
     roleUsers.value = (await fetchRoleUsersRequest(userTarget.value.id)) ?? [];
   }
   savingUsers.value = false;
@@ -146,9 +148,9 @@ watch(auditUserId, async (uid) => {
 async function removeUserRole(roleId: string, userId: string) {
   const err = await removeUserFromRoleRequest(roleId, userId);
   if (err) {
-    toast.add({ title: "移除角色失败", description: err, color: "error" });
+    toast.add({ title: t("rolePermission.toast.removeRoleFailed"), description: err, color: "error" });
   } else {
-    toast.add({ title: "已从此角色移出用户，权限立即失效", color: "success" });
+    toast.add({ title: t("rolePermission.toast.roleRemoved"), color: "success" });
     auditUserRoles.value = (await fetchUserRolesRequest(userId)) ?? [];
     roleUsers.value = (await fetchRoleUsersRequest(userTarget.value?.id ?? "")) ?? [];
   }
@@ -176,11 +178,11 @@ onMounted(async () => {
 });
 
 // ─── table columns ───
-const columns = [
-  { accessorKey: "name", header: "角色名" },
+const columns = computed(() => [
+  { accessorKey: "name", header: t("rolePermission.table.name") },
   {
     accessorKey: "permissions",
-    header: "权限数",
+    header: t("rolePermission.table.permCount"),
     cell: ({ row }: { row: any }) => {
       const count = row.original.permissions?.length ?? 0;
       return h("span", { class: "font-mono" }, `${count}`);
@@ -188,7 +190,7 @@ const columns = [
   },
   {
     id: "actions",
-    header: "操作",
+    header: t("rolePermission.table.actions"),
     cell: ({ row }: { row: any }) => {
       const role = row.original as Role;
       const UButton = resolveComponent("UButton");
@@ -198,7 +200,7 @@ const columns = [
           h(UButton, {
             size: "xs",
             variant: "ghost",
-            label: "管理权限",
+            label: t("rolePermission.table.managePerms"),
             onClick: () => openPerms(role),
           })
         );
@@ -208,7 +210,7 @@ const columns = [
           h(UButton, {
             size: "xs",
             variant: "ghost",
-            label: "管理用户",
+            label: t("rolePermission.table.manageUsers"),
             onClick: () => openUsers(role),
           })
         );
@@ -216,15 +218,15 @@ const columns = [
       return h("div", { class: "flex gap-1" }, buttons);
     },
   },
-];
+]);
 </script>
 
 <template>
-  <DashboardPanel title="权限管理">
+  <DashboardPanel :title="t('rolePermission.title')">
     <div class="flex flex-wrap items-center justify-between gap-1.5 mb-3">
       <UButton
         v-if="can('role.manage')"
-        label="新建角色"
+        :label="t('rolePermission.newRole')"
         icon="i-lucide-plus"
         @click="openCreate" />
     </div>
@@ -238,24 +240,24 @@ const columns = [
       class="flex-1" />
 
     <!-- Modal: 新建角色 -->
-    <UModal v-model:open="createOpen" title="新建角色">
+    <UModal v-model:open="createOpen" :title="t('rolePermission.createModal.title')">
       <template #body>
         <div class="flex flex-col gap-3">
-          <UFormField label="角色名" required>
-            <UInput v-model="createName" placeholder="输入角色名" class="w-full" />
+          <UFormField :label="t('rolePermission.createModal.nameLabel')" required>
+            <UInput v-model="createName" :placeholder="t('rolePermission.createModal.namePlaceholder')" class="w-full" />
           </UFormField>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton label="取消" color="neutral" variant="subtle" @click="createOpen = false" />
-          <UButton label="保存" color="primary" :loading="creating" @click="submitCreate" />
+          <UButton :label="t('common.cancel')" color="neutral" variant="subtle" @click="createOpen = false" />
+          <UButton :label="t('common.save')" color="primary" :loading="creating" @click="submitCreate" />
         </div>
       </template>
     </UModal>
 
     <!-- Modal: 管理权限 -->
-    <UModal v-model:open="permOpen" :title="`管理权限 — ${permTarget?.name ?? ''}`">
+    <UModal v-model:open="permOpen" :title="t('rolePermission.permModal.title', { name: permTarget?.name ?? '' })">
       <template #body>
         <div class="flex flex-col gap-4 max-h-96 overflow-auto">
           <div v-for="grp in groupedPermissions" :key="grp.group">
@@ -273,14 +275,14 @@ const columns = [
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton label="取消" color="neutral" variant="subtle" @click="permOpen = false" />
-          <UButton label="保存" color="primary" :loading="savingPerms" @click="savePerms" />
+          <UButton :label="t('common.cancel')" color="neutral" variant="subtle" @click="permOpen = false" />
+          <UButton :label="t('common.save')" color="primary" :loading="savingPerms" @click="savePerms" />
         </div>
       </template>
     </UModal>
 
     <!-- Modal: 管理用户 -->
-    <UModal v-model:open="userOpen" :title="`管理用户 — ${userTarget?.name ?? ''}`">
+    <UModal v-model:open="userOpen" :title="t('rolePermission.userModal.title', { name: userTarget?.name ?? '' })">
       <template #body>
         <div class="flex flex-col gap-4">
           <!-- Transfer panel: add / remove users -->
@@ -296,16 +298,16 @@ const columns = [
 
           <!-- Audit user roles -->
           <div>
-            <p class="font-semibold text-sm mb-2">查看 / 管理用户的全部角色</p>
+            <p class="font-semibold text-sm mb-2">{{ t('rolePermission.userModal.auditTitle') }}</p>
             <div class="flex gap-2 mb-2">
               <USelect
                 v-model="auditUserId"
                 :items="allUserBriefs.map(u => ({ label: (u.nickName || u.userName) + ' (' + u.email + ')', value: u.id }))"
-                placeholder="选择要检查的用户"
+                :placeholder="t('rolePermission.userModal.selectUser')"
                 class="flex-1" />
             </div>
-            <div v-if="auditUserId && auditLoading" class="text-muted text-sm">加载中…</div>
-            <div v-else-if="auditUserId && auditUserRoles.length === 0" class="text-muted text-sm">此用户没有任何角色</div>
+            <div v-if="auditUserId && auditLoading" class="text-muted text-sm">{{ t('rolePermission.userModal.loading') }}</div>
+            <div v-else-if="auditUserId && auditUserRoles.length === 0" class="text-muted text-sm">{{ t('rolePermission.userModal.noRoles') }}</div>
             <div v-else-if="auditUserId" class="flex flex-col gap-1">
               <div
                 v-for="r in auditUserRoles"
@@ -313,13 +315,13 @@ const columns = [
                 class="flex items-center justify-between rounded bg-elevated px-3 py-2">
                 <span class="flex items-center gap-2">
                   {{ r.name }}
-                  <UBadge v-if="r.name === 'User'" size="xs" color="warning" variant="subtle">默认角色</UBadge>
+                  <UBadge v-if="r.name === 'User'" size="xs" color="warning" variant="subtle">{{ t('rolePermission.userModal.defaultRole') }}</UBadge>
                 </span>
                 <UButton
                   size="xs"
                   color="error"
                   variant="ghost"
-                  label="移除此角色"
+                  :label="t('rolePermission.userModal.removeRole')"
                   @click="removeUserRole(r.id, auditUserId)" />
               </div>
             </div>

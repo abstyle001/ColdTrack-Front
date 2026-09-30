@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, h, ref, resolveComponent } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { parseDateTime, toCalendarDate } from "@internationalized/date";
 import type { Project, User } from "../utils/types";
 import type { TableColumn, AcceptableValue } from "@nuxt/ui";
@@ -13,6 +14,7 @@ const UBadge = resolveComponent("UBadge");
 const UIcon = resolveComponent("UIcon");
 
 const { can } = usePermission();
+const { t } = useI18n();
 const userStore = useUserStore();
 const router = useRouter();
 const toast = useToast();
@@ -28,11 +30,11 @@ const {
   deleteProject,
 } = useProject();
 
-const statusLabel: Record<string, string> = {
-  InProgress: "进行中",
-  Completed: "已完结",
-  Archived: "已归档",
-};
+const statusLabel = computed<Record<string, string>>(() => ({
+  InProgress: t("project.status.inProgress"),
+  Completed: t("project.status.completed"),
+  Archived: t("project.status.archived"),
+}));
 const statusColor: Record<string, string> = {
   InProgress: "info",
   Completed: "success",
@@ -41,23 +43,23 @@ const statusColor: Record<string, string> = {
 
 // Reka UI 的 SelectItem 不允许空字符串 value（会直接抛错并锁死页面点击），
 // 因此「全部状态」用哨兵值 "all"，变更时映射回空字符串
-const statusFilterOptions = [
-  { label: "全部状态", value: "all" },
-  { label: "进行中", value: "InProgress" },
-  { label: "已完结", value: "Completed" },
-  { label: "已归档", value: "Archived" },
-];
+const statusFilterOptions = computed(() => [
+  { label: t("project.allStatus"), value: "all" },
+  { label: t("project.status.inProgress"), value: "InProgress" },
+  { label: t("project.status.completed"), value: "Completed" },
+  { label: t("project.status.archived"), value: "Archived" },
+]);
 
 function onStatusFilterChange(value: AcceptableValue) {
   statusFilter.value = !value || value === "all" ? "" : String(value);
   fetchProjects();
 }
 
-const statusOptions = [
-  { label: "进行中", value: "InProgress" },
-  { label: "已完结", value: "Completed" },
-  { label: "已归档", value: "Archived" },
-];
+const statusOptions = computed(() => [
+  { label: t("project.status.inProgress"), value: "InProgress" },
+  { label: t("project.status.completed"), value: "Completed" },
+  { label: t("project.status.archived"), value: "Archived" },
+]);
 
 // 负责人 / 成员候选人员
 const userList = ref<User[]>([]);
@@ -142,8 +144,8 @@ async function submit() {
   if (saving.value) return;
   if (!form.value.name.trim() || !form.value.managerId) {
     toast.add({
-      title: "提示",
-      description: "请填写项目名称并选择负责人",
+      title: t("project.toast.tip"),
+      description: t("project.toast.fillNameAndManager"),
       icon: "i-material-symbols:error-circle-rounded-outline-sharp",
       color: "error",
     });
@@ -190,10 +192,10 @@ function viewTasks(project: Project) {
   router.push("/task?projectId=" + project.id);
 }
 
-const columns: TableColumn<Project>[] = [
+const columns = computed<TableColumn<Project>[]>(() => [
   {
     accessorKey: "name",
-    header: "项目名称",
+    header: t("project.table.name"),
     cell: ({ row }) =>
       h("div", { class: "flex flex-col min-w-0" }, [
         h("span", { class: "font-medium" }, row.original.name),
@@ -204,7 +206,7 @@ const columns: TableColumn<Project>[] = [
   },
   {
     accessorKey: "managerName",
-    header: "负责人",
+    header: t("project.table.manager"),
     cell: ({ row }) =>
       h(
         "span",
@@ -214,10 +216,10 @@ const columns: TableColumn<Project>[] = [
   },
   {
     accessorKey: "status",
-    header: "状态",
+    header: t("project.table.status"),
     cell: ({ row }) =>
       h(UBadge, {
-        label: statusLabel[row.original.status] || row.original.status,
+        label: statusLabel.value[row.original.status] || row.original.status,
         color: statusColor[row.original.status] || "neutral",
         variant: "soft",
         size: "xs",
@@ -225,7 +227,7 @@ const columns: TableColumn<Project>[] = [
   },
   {
     id: "dateRange",
-    header: "起止日期",
+    header: t("project.table.dateRange"),
     cell: ({ row }) => {
       const s = row.original.startDate?.slice(0, 10);
       const e = row.original.endDate?.slice(0, 10);
@@ -236,20 +238,20 @@ const columns: TableColumn<Project>[] = [
       ]);
     },
   },
-  { accessorKey: "memberCount", header: "成员数" },
-  { accessorKey: "taskCount", header: "任务数" },
-  { accessorKey: "createdAt", header: "创建时间" },
+  { accessorKey: "memberCount", header: t("project.table.memberCount") },
+  { accessorKey: "taskCount", header: t("project.table.taskCount") },
+  { accessorKey: "createdAt", header: t("project.table.createdAt") },
   {
     id: "actions",
-    header: "操作",
+    header: t("project.table.actions"),
   },
-];
+]);
 
 loadUsers();
 </script>
 
 <template>
-  <DashboardPanel title="项目">
+  <DashboardPanel :title="t('project.title')">
     <template v-if="can('project.read')">
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <div class="flex flex-wrap items-center gap-2">
@@ -257,17 +259,17 @@ loadUsers();
             v-model="keyword"
             class="max-w-sm"
             icon="i-lucide-search"
-            placeholder="搜索项目名称或描述"
+            :placeholder="t('project.searchPlaceholder')"
           />
           <USelect
             :model-value="statusFilter || 'all'"
             :items="statusFilterOptions"
-            placeholder="按状态筛选"
+            :placeholder="t('project.statusFilterPlaceholder')"
             class="w-32"
             @update:model-value="onStatusFilterChange"
           />
         </div>
-        <UButton v-if="can('project.create')" label="新建项目" icon="i-lucide-plus" @click="openCreate" />
+        <UButton v-if="can('project.create')" :label="t('project.createButton')" icon="i-lucide-plus" @click="openCreate" />
       </div>
 
       <UTable
@@ -284,7 +286,7 @@ loadUsers();
             <UButton
               size="xs"
               variant="ghost"
-              label="查看任务"
+              :label="t('project.actions.viewTasks')"
               icon="i-lucide-list-todo"
               @click="viewTasks(row.original)"
             />
@@ -292,7 +294,7 @@ loadUsers();
               v-if="can('project.update') || isManager(row.original)"
               size="xs"
               variant="ghost"
-              label="编辑"
+              :label="t('project.actions.edit')"
               @click="openEdit(row.original)"
             />
             <UButton
@@ -300,7 +302,7 @@ loadUsers();
               size="xs"
               variant="ghost"
               color="error"
-              label="删除"
+              :label="t('project.actions.delete')"
               @click="openDelete(row.original)"
             />
           </div>
@@ -309,29 +311,29 @@ loadUsers();
 
       <div v-else class="flex flex-1 flex-col items-center justify-center py-16 text-muted">
         <UIcon name="i-lucide-folder-open" class="size-12 mb-3 opacity-40" />
-        <p>暂无项目</p>
-        <p v-if="can('project.create')" class="text-sm mt-1">点击右上角「新建项目」创建第一个项目</p>
+        <p>{{ t('project.empty.title') }}</p>
+        <p v-if="can('project.create')" class="text-sm mt-1">{{ t('project.empty.hint') }}</p>
       </div>
 
       <!-- 新建 / 编辑项目 -->
-      <UModal v-model:open="open" :title="editing ? '编辑项目' : '新建项目'" size="lg">
+      <UModal v-model:open="open" :title="editing ? t('project.modal.editTitle') : t('project.modal.createTitle')" size="lg">
         <template #body>
           <div class="flex flex-col gap-3">
-            <UFormField label="项目名称" required>
-              <UInput v-model="form.name" placeholder="请输入项目名称" class="w-full" />
+            <UFormField :label="t('project.modal.name')" required>
+              <UInput v-model="form.name" :placeholder="t('project.modal.namePlaceholder')" class="w-full" />
             </UFormField>
-            <UFormField label="项目描述">
-              <UTextarea v-model="form.description" placeholder="项目描述（可选）" class="w-full" :rows="3" />
+            <UFormField :label="t('project.modal.description')">
+              <UTextarea v-model="form.description" :placeholder="t('project.modal.descriptionPlaceholder')" class="w-full" :rows="3" />
             </UFormField>
-            <UFormField label="负责人" required>
+            <UFormField :label="t('project.modal.manager')" required>
               <USelect
                 v-model="form.managerId"
                 :items="userOptions"
-                placeholder="选择负责人"
+                :placeholder="t('project.modal.managerPlaceholder')"
                 class="w-full"
               />
             </UFormField>
-            <UFormField label="状态">
+            <UFormField :label="t('project.modal.status')">
               <USelect
                 v-model="form.status"
                 :items="statusOptions"
@@ -339,19 +341,19 @@ loadUsers();
               />
             </UFormField>
             <div class="flex gap-3">
-              <UFormField label="开始日期" class="flex-1">
+              <UFormField :label="t('project.modal.startDate')" class="flex-1">
                 <UInputDate v-model="startDateVal" class="w-full" />
               </UFormField>
-              <UFormField label="结束日期" class="flex-1">
+              <UFormField :label="t('project.modal.endDate')" class="flex-1">
                 <UInputDate v-model="endDateVal" class="w-full" />
               </UFormField>
             </div>
-            <UFormField label="项目成员">
+            <UFormField :label="t('project.modal.members')">
               <USelect
                 v-model="selectedMemberIds"
                 :items="userOptions"
                 multiple
-                placeholder="选择项目成员"
+                :placeholder="t('project.modal.membersPlaceholder')"
                 class="w-full"
               />
             </UFormField>
@@ -359,21 +361,21 @@ loadUsers();
         </template>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton label="取消" color="neutral" variant="subtle" @click="open = false" />
-            <UButton label="保存" color="primary" :loading="saving" @click="submit" />
+            <UButton :label="t('common.cancel')" color="neutral" variant="subtle" @click="open = false" />
+            <UButton :label="t('common.save')" color="primary" :loading="saving" @click="submit" />
           </div>
         </template>
       </UModal>
 
       <!-- 删除确认 -->
-      <UModal v-model:open="deleteOpen" :title="`删除项目「${deleteTarget?.name}」`">
+      <UModal v-model:open="deleteOpen" :title="t('project.deleteModal.title', { name: deleteTarget?.name })">
         <template #body>
-          确定要删除该项目吗？此操作无法撤销；若项目下仍有任务，将无法删除。
+          {{ t('project.deleteModal.body') }}
         </template>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton label="取消" color="neutral" variant="subtle" @click="deleteOpen = false" />
-            <UButton label="确定删除" color="error" @click="confirmDelete" />
+            <UButton :label="t('common.cancel')" color="neutral" variant="subtle" @click="deleteOpen = false" />
+            <UButton :label="t('project.deleteModal.confirm')" color="error" @click="confirmDelete" />
           </div>
         </template>
       </UModal>
@@ -381,7 +383,7 @@ loadUsers();
     <template v-else>
       <div class="flex flex-col items-center justify-center py-16 text-muted">
         <UIcon name="i-lucide-shield-x" class="size-12 mb-4 opacity-40" />
-        <p class="text-lg">您没有访问此页面的权限</p>
+        <p class="text-lg">{{ t('project.noPermission') }}</p>
       </div>
     </template>
   </DashboardPanel>

@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { NavigationMenuItem } from '@nuxt/ui';
 import { usePermission } from '../logic/usePermission';
 
 const open = ref(true);
+const { t } = useI18n();
 const { can } = usePermission();
 
 const links = computed<NavigationMenuItem[][]>(() => {
   const items: NavigationMenuItem[] = [
     {
-      label: '首页',
+      label: t('nav.home'),
       icon: 'i-material-symbols:house',
       to: '/home',
       onSelect: () => { open.value = false },
@@ -17,7 +19,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
   ];
   if (can('user.read')) {
     items.push({
-      label: '人员',
+      label: t('nav.person'),
       icon: 'i-material-symbols:person',
       to: '/person',
       onSelect: () => { open.value = false },
@@ -25,7 +27,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
   }
   if (can('position.read')) {
     items.push({
-      label: '职位',
+      label: t('nav.position'),
       icon: 'i-material-symbols:work',
       to: '/position',
       onSelect: () => { open.value = false },
@@ -33,7 +35,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
   }
   if (can('department.read')) {
     items.push({
-      label: '部门',
+      label: t('nav.department'),
       icon: 'i-material-symbols:local-fire-department-rounded',
       to: '/department',
       onSelect: () => { open.value = false },
@@ -41,7 +43,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
   }
   if (can('project.read')) {
     items.push({
-      label: '项目',
+      label: t('nav.project'),
       icon: 'i-material-symbols:folder-outline',
       to: '/project',
       onSelect: () => { open.value = false },
@@ -49,7 +51,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
   }
   if (can('task.read')) {
     items.push({
-      label: '任务',
+      label: t('nav.task'),
       icon: 'i-material-symbols:task',
       to: '/task',
       onSelect: () => { open.value = false },
@@ -57,7 +59,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
   }
   if (can('role.manage')) {
     items.push({
-      label: '权限管理',
+      label: t('nav.rolePermission'),
       icon: 'i-lucide-shield-check',
       to: '/role-permission',
       onSelect: () => { open.value = false },

@@ -1,4 +1,5 @@
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Project, CreateProjectPayload, UpdateProjectPayload } from "../utils/types";
 import {
   fetchProjectListRequest,
@@ -8,6 +9,7 @@ import {
 } from "../api/userApi";
 
 export function useProject() {
+  const { t } = useI18n();
   const projectList = ref<Project[]>([]);
   const loading = ref(true);
   const keyword = ref("");
@@ -39,16 +41,16 @@ export function useProject() {
     const { err, data } = await createProjectRequest(payload);
     if (err) {
       toast.add({
-        title: "创建失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("project.toast.createFailed"),
+        description: typeof err === "string" ? err : t("project.toast.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return null;
     }
     toast.add({
-      title: "创建成功",
-      description: `项目「${data?.name}」已创建`,
+      title: t("project.toast.createSuccess"),
+      description: t("project.toast.created", { name: data?.name }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -60,16 +62,16 @@ export function useProject() {
     const { err, data } = await updateProjectRequest(id, payload);
     if (err) {
       toast.add({
-        title: "更新失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("project.toast.updateFailed"),
+        description: typeof err === "string" ? err : t("project.toast.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return null;
     }
     toast.add({
-      title: "更新成功",
-      description: `项目「${data?.name}」已更新`,
+      title: t("project.toast.updateSuccess"),
+      description: t("project.toast.updated", { name: data?.name }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -81,16 +83,16 @@ export function useProject() {
     const err = await deleteProjectRequest(id);
     if (err) {
       toast.add({
-        title: "删除失败",
-        description: typeof err === "string" ? err : "服务器错误",
+        title: t("project.toast.deleteFailed"),
+        description: typeof err === "string" ? err : t("project.toast.serverError"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
       return false;
     }
     toast.add({
-      title: "删除成功",
-      description: "项目已删除",
+      title: t("project.toast.deleteSuccess"),
+      description: t("project.toast.deleted"),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });

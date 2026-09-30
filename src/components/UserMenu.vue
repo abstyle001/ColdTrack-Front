@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
 import { getTokenClaimRequest, getUserInfoRequest } from '../api/userApi';
@@ -13,6 +14,7 @@ defineProps<{
 }>()
 
 const userStore = useUserStore();
+const { t } = useI18n();
 
 const colorMode = useColorMode();
 const appConfig = useAppConfig();
@@ -33,18 +35,14 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   label: user.value.name,
   avatar: user.value.avatar
 }], [{
-  label: '个人信息',
-  icon: 'i-lucide-user',
-  to: '/me'
-}, {
-  label: '设置',
+  label: t('menu.settings'),
   icon: 'i-lucide-settings',
   to: '/settings'
 }], [{
-  label: '主题',
+  label: t('menu.theme'),
   icon: 'i-lucide-palette',
   children: [{
-    label: '主题色',
+    label: t('menu.primaryColor'),
     slot: 'chip',
     chip: appConfig.ui.primary,
     content: {
@@ -85,7 +83,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     }))
   }]
 }, {
-  label: '外观',
+  label: t('menu.appearance'),
   icon: 'i-lucide-sun-moon',
   children: [{
     label: 'Light',
@@ -117,7 +115,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   to: 'https://github.com/nuxt-ui-pro/dashboard-vue',
   target: '_blank'
 }], [{
-  label: '退出登录',
+  label: t('menu.logout'),
   icon: 'i-lucide-log-out',
   onSelect: (e) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Task, User, Tag, Project } from "../utils/types";
 import type { AcceptableValue } from "@nuxt/ui";
 import {
@@ -19,6 +20,7 @@ export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: n
   const pageSize = ref<number>(10);
   const loading = ref<boolean>(true);
   const toast = useToast();
+  const { t } = useI18n();
   const open = ref(false);
 
   const statusFilter = ref<string>("");
@@ -111,8 +113,8 @@ export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: n
     const selectedRows = tableRef.value?.tableApi.getSelectedRowModel().rows;
     if (selectedRows === undefined || selectedRows.length === 0) {
       toast.add({
-        title: "提示",
-        description: "请至少选择一条记录",
+        title: t("task.toast.tip"),
+        description: t("task.toast.selectAtLeastOne"),
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
       });
@@ -134,7 +136,7 @@ export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: n
     const err = await deleteTaskBatchRequest(selectedIds);
     if (err) {
       toast.add({
-        title: "删除失败",
+        title: t("task.toast.deleteFailed"),
         description: err,
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
@@ -143,8 +145,8 @@ export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: n
     }
 
     toast.add({
-      title: "删除成功",
-      description: `成功删除${selectedIds.length}条记录`,
+      title: t("task.toast.deleteSuccess"),
+      description: t("task.toast.batchDeleted", { count: selectedIds.length }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
@@ -163,7 +165,7 @@ export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: n
     const result = await updateTaskStatusBatchRequest(selectedIds, status);
     if (result.err) {
       toast.add({
-        title: "状态更新失败",
+        title: t("task.toast.statusUpdateFailed"),
         description: result.err,
         icon: "i-material-symbols:error-circle-rounded-outline-sharp",
         color: "error",
@@ -181,8 +183,8 @@ export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: n
     );
 
     toast.add({
-      title: "状态更新成功",
-      description: `已更新${updatedIds.size}条任务`,
+      title: t("task.toast.statusUpdateSuccess"),
+      description: t("task.toast.batchStatusUpdated", { count: updatedIds.size }),
       icon: "i-material-symbols:check-circle-outline",
       color: "success",
     });
