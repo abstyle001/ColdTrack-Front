@@ -4,6 +4,8 @@ import axios, {
 } from "axios";
 import { Status } from "./types";
 import { i18n } from "../i18n";
+import router from "../router";
+import { loginStatus, token } from "./useStorage";
 
 const t = i18n.global.t;
 
@@ -15,6 +17,23 @@ interface Options {
   token?: string;
   body?: object | FormData | null;
 }
+
+const http = axios.create();
+
+// 响应拦截器：401 = 未认证（授权失败或 token 过期），清除本地登录态并跳转登录页
+http.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response?.status === Status.UN_AUTHORIZED) {
+      token.value = "";
+      loginStatus.value = false;
+      if (router.currentRoute.value.path !== "/login") {
+        router.push("/login");
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 async function request<T>(
   url: string,
@@ -51,7 +70,7 @@ async function request<T>(
         });
         ultimaUrl += "?" + params.toString();
       }
-      response = await axios.get(ultimaUrl, {
+      response = await http.get(ultimaUrl, {
         method: "GET",
         headers,
       });
@@ -59,7 +78,7 @@ async function request<T>(
         return [null, response.data as T];
       }
     } else {
-      response = await axios({
+      response = await http({
         url: ultimaUrl,
         method,
         headers,
