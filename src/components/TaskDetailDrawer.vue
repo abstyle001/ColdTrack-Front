@@ -5,7 +5,7 @@ import type { Task, TaskComment } from '../utils/types';
 import {
   fetchTaskCommentsRequest,
   createTaskCommentRequest,
-} from '../api/userApi';
+} from '../api/task';
 import { usePermission } from '../logic/usePermission';
 
 const props = defineProps<{ task: Task | null }>();

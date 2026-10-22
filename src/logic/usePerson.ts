@@ -6,9 +6,8 @@ import { useI18n } from "vue-i18n";
 import type { User } from "../utils/types";
 import request from "../utils/request";
 import { token } from "../utils/useStorage";
-import { fetchUserPageRequest } from "../api/userApi";
+import { deleteUserBatchRequest, fetchUserPageRequest } from "../api/user";
 import type { AcceptableValue } from "@nuxt/ui";
-import { deleteUserBatchRequest } from "../api/userApi";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function usePerson(tableRef: any) {

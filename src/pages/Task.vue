@@ -13,14 +13,16 @@ import TaskKanban from '../components/TaskKanban.vue';
 import TaskDetailDrawer from '../components/TaskDetailDrawer.vue';
 import {
   fetchTaskListRequest,
-  fetchProjectDetailRequest,
   createTaskRequest,
   updateTaskRequest,
   deleteTaskRequest,
+} from '../api/task';
+import { fetchProjectDetailRequest } from '../api/project';
+import {
   createTagRequest,
   updateTagRequest,
   deleteTagRequest,
-} from '../api/userApi';
+} from '../api/tag';
 
 const { t } = useI18n();
 const { can } = usePermission();

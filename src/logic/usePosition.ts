@@ -7,7 +7,7 @@ import {
   createPositionRequest,
   updatePositionRequest,
   deletePositionRequest,
-} from "../api/userApi";
+} from "../api/position";
 
 export function usePosition() {
   const positionList = ref<Position[]>([]);

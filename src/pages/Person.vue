@@ -7,11 +7,11 @@ import { usePerson } from '../logic/usePerson';
 import { usePermission } from '../logic/usePermission';
 import {
   fetchUserPositionsRequest,
-  createUserRequest,
-  fetchPositionListRequest,
   assignUserPositionRequest,
   removeUserPositionRequest,
-} from '../api/userApi';
+} from '../api/user';
+import { createUserRequest } from '../api/account';
+import { fetchPositionListRequest } from '../api/position';
 
 const { can } = usePermission();
 const { t } = useI18n();

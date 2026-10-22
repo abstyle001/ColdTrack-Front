@@ -8,7 +8,8 @@ import type { TableColumn, AcceptableValue } from "@nuxt/ui";
 import { useProject } from "../logic/useProject";
 import { usePermission } from "../logic/usePermission";
 import { useUserStore } from "../store";
-import { fetchUserListRequest, fetchProjectDetailRequest } from "../api/userApi";
+import { fetchUserListRequest } from "../api/user";
+import { fetchProjectDetailRequest } from "../api/project";
 
 const UBadge = resolveComponent("UBadge");
 const UIcon = resolveComponent("UIcon");

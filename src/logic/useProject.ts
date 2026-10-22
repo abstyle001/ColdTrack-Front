@@ -6,7 +6,7 @@ import {
   createProjectRequest,
   updateProjectRequest,
   deleteProjectRequest,
-} from "../api/userApi";
+} from "../api/project";
 
 export function useProject() {
   const { t } = useI18n();
