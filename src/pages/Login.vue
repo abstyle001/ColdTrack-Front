@@ -56,7 +56,7 @@ import request from '../utils/request';
 import { loginStatus, token } from '../utils/useStorage';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../store';
-import { getTokenClaimRequest } from '../api/userApi';
+import { getTokenClaimRequest } from '../api/account';
 import * as z from 'zod';
 import type { FormSubmitEvent } from '@nuxt/ui'
 

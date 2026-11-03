@@ -4,13 +4,13 @@ import { useI18n } from "vue-i18n";
 import type { Department, Position } from "../utils/types";
 import { usePosition } from "../logic/usePosition";
 import { usePermission } from "../logic/usePermission";
+import { fetchDepartmentListRequest } from "../api/department";
 import {
-  fetchDepartmentListRequest,
   fetchDepartmentsByPositionRequest,
   assignPositionDepartmentRequest,
   removePositionDepartmentRequest,
-  fetchUsersByPositionRequest,
-} from "../api/userApi";
+} from "../api/position";
+import { fetchUsersByPositionRequest } from "../api/user";
 import type { TableColumn } from "@nuxt/ui";
 
 const { can } = usePermission();

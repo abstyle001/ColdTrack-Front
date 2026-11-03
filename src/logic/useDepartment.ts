@@ -8,7 +8,7 @@ import {
   createDepartmentRequest,
   updateDepartmentRequest,
   deleteDepartmentRequest,
-} from "../api/userApi";
+} from "../api/department";
 
 export function useDepartment() {
   // 当前页（用于表格构建树）

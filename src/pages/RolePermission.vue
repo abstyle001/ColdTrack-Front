@@ -5,14 +5,14 @@ import { usePermission } from "../logic/usePermission";
 import {
   fetchRolesRequest,
   fetchPermissionsCatalogRequest,
-  fetchUserBriefRequest,
   fetchRoleUsersRequest,
   fetchUserRolesRequest,
   createRoleRequest,
   updateRolePermissionsRequest,
   addUserToRoleRequest,
   removeUserFromRoleRequest,
-} from "../api/userApi";
+} from "../api/role";
+import { fetchUserBriefRequest } from "../api/user";
 import type { Role, Permission, User, UserBrief } from "../utils/types";
 import UserTransfer from "../components/UserTransfer.vue";
 
