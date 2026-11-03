@@ -415,7 +415,7 @@ async function fetchTaskCountRequest(assigneeId?: string, status?: string, prior
   return err ? null : data;
 }
 
-async function createTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
+async function createTaskRequest(task: Omit<Partial<Task>, 'dependencies' | 'dependents'> & { tagIds?: number[]; dependencies?: { predecessorTaskId: number; dependencyType: string }[] }) {
   const [err, data] = await request<Task>("/task", "POST", {
     token: token.value,
     body: {
@@ -426,12 +426,13 @@ async function createTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
       priority: task.priority,
       deadline: task.deadline,
       tagIds: task.tagIds,
+      dependencies: task.dependencies,
     },
   });
   return { err, data };
 }
 
-async function updateTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
+async function updateTaskRequest(task: Omit<Partial<Task>, 'dependencies' | 'dependents'> & { tagIds?: number[]; dependencies?: { predecessorTaskId: number; dependencyType: string }[] }) {
   const [err, data] = await request<Task>(`/task/${task.id}`, "PUT", {
     token: token.value,
     body: {
@@ -443,6 +444,7 @@ async function updateTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
       priority: task.priority,
       deadline: task.deadline,
       tagIds: task.tagIds,
+      dependencies: task.dependencies,
     },
   });
   return { err, data };

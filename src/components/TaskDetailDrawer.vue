@@ -51,6 +51,13 @@ function isOverdue(deadline?: string): boolean {
   return new Date(deadline) < new Date();
 }
 
+const dependencyTypeLabel = computed<Record<string, string>>(() => ({
+  FinishToStart: t('task.dependency.fs'),
+  StartToStart: t('task.dependency.ss'),
+  FinishToFinish: t('task.dependency.ff'),
+  StartToFinish: t('task.dependency.sf'),
+}));
+
 function avatarText(c: TaskComment): string {
   return (c.authorName || '?').charAt(0);
 }
@@ -137,6 +144,28 @@ async function submitComment() {
         <div v-if="task.description">
           <p class="text-xs text-muted mb-1.5">{{ t('task.drawer.description') }}</p>
           <p class="text-sm whitespace-pre-wrap">{{ task.description }}</p>
+        </div>
+
+        <!-- 前置 / 后置任务 -->
+        <div v-if="(task.dependencies && task.dependencies.length) || (task.dependents && task.dependents.length)" class="flex flex-col gap-3">
+          <div v-if="task.dependencies && task.dependencies.length">
+            <p class="text-xs text-muted mb-1.5">{{ t('task.drawer.predecessors') }}</p>
+            <div class="flex flex-col gap-1.5">
+              <div v-for="dep in task.dependencies" :key="dep.taskId" class="flex items-center gap-2">
+                <UBadge :label="dependencyTypeLabel[dep.dependencyType] || dep.dependencyType" color="info" variant="soft" size="xs" />
+                <span class="text-sm">{{ dep.title }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="task.dependents && task.dependents.length">
+            <p class="text-xs text-muted mb-1.5">{{ t('task.drawer.successors') }}</p>
+            <div class="flex flex-col gap-1.5">
+              <div v-for="dep in task.dependents" :key="dep.taskId" class="flex items-center gap-2">
+                <UBadge :label="dependencyTypeLabel[dep.dependencyType] || dep.dependencyType" color="neutral" variant="soft" size="xs" />
+                <span class="text-sm">{{ dep.title }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 元信息 -->

@@ -70,6 +70,8 @@ interface Task {
   createdAt: string;
   updatedAt: string;
   tags?: Tag[];
+  dependencies?: TaskDependency[];
+  dependents?: TaskDependency[];
 }
 
 interface Tag {
@@ -77,6 +79,14 @@ interface Tag {
   name: string;
   color?: string;
   createdAt: string;
+}
+
+export type DependencyType = 'FinishToStart' | 'StartToStart' | 'FinishToFinish' | 'StartToFinish';
+
+interface TaskDependency {
+  taskId: number;
+  title: string;
+  dependencyType: DependencyType;
 }
 
 interface TokenClaim {
@@ -179,5 +189,5 @@ interface UpdateProjectPayload {
 }
 export type { UserBrief, User, Department, DepartmentTree, Position, UserPositionView, Task, TaskComment, TokenClaim, Permission, Role, Tag, Project, ProjectMemberBrief, CreateProjectPayload, UpdateProjectPayload };
 
-export type { TaskStats };
+export type { TaskStats, TaskDependency };
 
