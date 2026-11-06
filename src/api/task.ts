@@ -50,7 +50,14 @@ export async function fetchTaskCountRequest(assigneeId?: string, status?: string
   return err ? null : data;
 }
 
-export async function createTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
+type TaskDependencyPayload = { predecessorTaskId: number; dependencyType: string };
+
+type TaskPayload = Omit<Partial<Task>, 'dependencies' | 'dependents'> & {
+  tagIds?: number[];
+  dependencies?: TaskDependencyPayload[];
+};
+
+export async function createTaskRequest(task: TaskPayload) {
   const [err, data] = await request<Task>("/task", "POST", {
     token: token.value,
     body: {
@@ -61,12 +68,13 @@ export async function createTaskRequest(task: Partial<Task> & { tagIds?: number[
       priority: task.priority,
       deadline: task.deadline,
       tagIds: task.tagIds,
+      dependencies: task.dependencies,
     },
   });
   return { err, data };
 }
 
-export async function updateTaskRequest(task: Partial<Task> & { tagIds?: number[] }) {
+export async function updateTaskRequest(task: TaskPayload) {
   const [err, data] = await request<Task>(`/task/${task.id}`, "PUT", {
     token: token.value,
     body: {
@@ -78,6 +86,7 @@ export async function updateTaskRequest(task: Partial<Task> & { tagIds?: number[
       priority: task.priority,
       deadline: task.deadline,
       tagIds: task.tagIds,
+      dependencies: task.dependencies,
     },
   });
   return { err, data };
