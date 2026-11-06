@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Task } from '../utils/types';
-import { updateTaskStatusRequest } from '../api/userApi';
+import { updateTaskStatusRequest } from '../api/task';
 
 const { t } = useI18n();
 

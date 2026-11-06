@@ -13,14 +13,16 @@ import TaskKanban from '../components/TaskKanban.vue';
 import TaskDetailDrawer from '../components/TaskDetailDrawer.vue';
 import {
   fetchTaskListRequest,
-  fetchProjectDetailRequest,
   createTaskRequest,
   updateTaskRequest,
   deleteTaskRequest,
+} from '../api/task';
+import { fetchProjectDetailRequest } from '../api/project';
+import {
   createTagRequest,
   updateTagRequest,
   deleteTagRequest,
-} from '../api/userApi';
+} from '../api/tag';
 
 const { t } = useI18n();
 const { can } = usePermission();
@@ -77,6 +79,13 @@ const priorityOptions = computed(() => [
   { label: t('task.priority.medium'), value: 'Medium' },
   { label: t('task.priority.high'), value: 'High' },
   { label: t('task.priority.urgent'), value: 'Urgent' },
+]);
+
+const dependencyTypeOptions = computed(() => [
+  { label: t('task.dependency.fs'), value: 'FinishToStart' },
+  { label: t('task.dependency.ss'), value: 'StartToStart' },
+  { label: t('task.dependency.ff'), value: 'FinishToFinish' },
+  { label: t('task.dependency.sf'), value: 'StartToFinish' },
 ]);
 
 const projectOptions = computed(() =>
@@ -143,6 +152,7 @@ async function onFormProjectChange(value: AcceptableValue) {
   const projectId = value ? Number(value) : undefined;
   if (!projectId) {
     memberOptions.value = [];
+    dependencyCandidates.value = [];
     form.value.assigneeId = '';
     return;
   }
@@ -153,6 +163,12 @@ async function onFormProjectChange(value: AcceptableValue) {
   if (form.value.assigneeId && !members.some((m) => m.id === form.value.assigneeId)) {
     form.value.assigneeId = '';
   }
+  // 加载该项目下的任务作为可选前置任务（排除当前正在编辑的任务自身）
+  const selfId = editTarget.value?.id;
+  const projectTasks = await fetchTaskListRequest(projectId);
+  dependencyCandidates.value = (projectTasks ?? [])
+    .filter((t) => t.id !== selfId)
+    .map((t) => ({ label: t.title, value: t.id }));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -164,6 +180,12 @@ const batchStatusOpen = ref(false);
 
 // ===== 标签选择与管理 =====
 const selectedTagIds = ref<number[]>([]);
+
+// ===== 前置依赖编辑 =====
+// 每条依赖：{ predecessorTaskId, dependencyType }
+const dependencyList = ref<{ predecessorTaskId: number | undefined; dependencyType: string }[]>([]);
+// 所选项目中的候选前置任务（排除当前编辑任务自身）
+const dependencyCandidates = ref<{ label: string; value: number }[]>([]);
 const tagManageOpen = ref(false);
 const newTagName = ref('');
 const newTagColor = ref('');
@@ -198,6 +220,7 @@ function openCreate() {
   deadlineTime.value = undefined;
   popoverOpen.value = false;
   selectedTagIds.value = [];
+  dependencyList.value = [{ predecessorTaskId: undefined, dependencyType: 'FinishToStart' }];
   onFormProjectChange(presetProjectId ?? '');
   formOpen.value = true;
 }
@@ -223,6 +246,9 @@ function openEdit(task: Task) {
     deadlineTime.value = undefined;
   }
   selectedTagIds.value = (task.tags ?? []).map((t) => t.id);
+  dependencyList.value = (task.dependencies && task.dependencies.length)
+    ? task.dependencies.map((d) => ({ predecessorTaskId: d.taskId, dependencyType: d.dependencyType }))
+    : [{ predecessorTaskId: undefined, dependencyType: 'FinishToStart' }];
   popoverOpen.value = false;
   onFormProjectChange(task.projectId);
   formOpen.value = true;
@@ -237,6 +263,22 @@ function parseDeadlineDate(raw: string | undefined | null): CalendarDateTime | u
   } catch {
     return undefined;
   }
+}
+
+// ===== 前置依赖编辑 =====
+function addDependencyRow() {
+  dependencyList.value.push({ predecessorTaskId: undefined, dependencyType: 'FinishToStart' });
+}
+
+function removeDependencyRow(index: number) {
+  dependencyList.value.splice(index, 1);
+}
+
+/** 组装提交用的依赖列表：过滤掉未选前置任务的空行 */
+function buildDependencies(): { predecessorTaskId: number; dependencyType: string }[] {
+  return dependencyList.value
+    .filter((d) => d.predecessorTaskId != null)
+    .map((d) => ({ predecessorTaskId: d.predecessorTaskId as number, dependencyType: d.dependencyType }));
 }
 
 async function submitForm() {
@@ -258,6 +300,7 @@ async function submitForm() {
       ...form.value,
       deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
       tagIds: selectedTagIds.value,
+      dependencies: buildDependencies(),
     });
     err = r.err;
   } else {
@@ -265,6 +308,7 @@ async function submitForm() {
       ...form.value,
       deadline: deadlineDate.value ? formatDate(deadlineDate.value) + 'T' + formatTime(deadlineTime.value) + ':00' : undefined,
       tagIds: selectedTagIds.value,
+      dependencies: buildDependencies(),
     });
     err = r.err;
   }
@@ -739,6 +783,47 @@ const columns = computed<TableColumn<Task>[]>(() => [
                   :label="tag.name"
                   @update:model-value="(v: boolean | 'indeterminate') => v ? selectedTagIds.includes(tag.id) || selectedTagIds.push(tag.id) : selectedTagIds = selectedTagIds.filter(id => id !== tag.id)"
                 />
+              </div>
+            </UFormField>
+            <UFormField :label="t('task.form.dependencies')">
+              <div v-if="!form.projectId" class="text-sm text-muted">
+                {{ t('task.form.dependenciesNoProject') }}
+              </div>
+              <div v-else class="flex flex-col gap-2">
+                <div v-if="dependencyCandidates.length === 0" class="text-sm text-muted">
+                  {{ t('task.form.noDependencyCandidates') }}
+                </div>
+                <div v-for="(dep, index) in dependencyList" :key="index" class="flex items-center gap-2">
+                  <USelect
+                    v-model="dep.predecessorTaskId"
+                    :items="dependencyCandidates"
+                    :placeholder="t('task.form.dependencyPlaceholder')"
+                    class="flex-1"
+                  />
+                  <USelect
+                    v-model="dep.dependencyType"
+                    :items="dependencyTypeOptions"
+                    class="w-36"
+                  />
+                  <UButton
+                    size="sm"
+                    variant="ghost"
+                    color="neutral"
+                    icon="i-lucide-x"
+                    :aria-label="t('task.form.removeDependency')"
+                    @click="removeDependencyRow(index)"
+                  />
+                </div>
+                <div>
+                  <UButton
+                    size="sm"
+                    variant="ghost"
+                    icon="i-lucide-plus"
+                    :label="t('task.form.addDependency')"
+                    :disabled="dependencyCandidates.length === 0"
+                    @click="addDependencyRow"
+                  />
+                </div>
               </div>
             </UFormField>
             <div class="flex gap-3">

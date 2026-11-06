@@ -7,10 +7,10 @@ import {
   fetchTaskCountRequest,
   deleteTaskBatchRequest,
   updateTaskStatusBatchRequest,
-  fetchUserListRequest,
-  fetchTagListRequest,
-  fetchProjectListRequest,
-} from "../api/userApi";
+} from "../api/task";
+import { fetchUserListRequest } from "../api/user";
+import { fetchTagListRequest } from "../api/tag";
+import { fetchProjectListRequest } from "../api/project";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useTask(tableRef: any, assigneeId?: string, initialProjectId?: number) {

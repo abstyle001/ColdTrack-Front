@@ -68,7 +68,7 @@
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '../store';
-import { updateUserRequest } from '../api/userApi';
+import { updateUserRequest } from '../api/user';
 import { locale } from '../utils/useStorage';
 import { setLocale, type AppLocale } from '../i18n';
 import * as z from 'zod';

@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n";
 import type { Department, User } from "../utils/types";
 import { useDepartment } from "../logic/useDepartment";
 import { usePermission } from "../logic/usePermission";
-import { fetchUserListRequest } from "../api/userApi";
+import { fetchUserListRequest } from "../api/user";
 import type { TableColumn } from "@nuxt/ui";
 
 const UButton = resolveComponent("UButton");
@@ -175,7 +175,7 @@ async function openPositions(dept: Department) {
   positionsFor.value = dept;
   positionsOpen.value = true;
   positionsLoading.value = true;
-  const { fetchPositionsByDepartmentRequest } = await import("../api/userApi");
+  const { fetchPositionsByDepartmentRequest } = await import("../api/position");
   const data = await fetchPositionsByDepartmentRequest(dept.id);
   positionNames.value = data ? data.map((p) => p.name) : [];
   positionsLoading.value = false;
