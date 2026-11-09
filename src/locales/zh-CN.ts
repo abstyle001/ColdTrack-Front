@@ -376,6 +376,7 @@ const messages = {
     view: {
       table: '表格',
       kanban: '看板',
+      calendar: '日历',
     },
     filter: {
       searchPlaceholder: '筛选标题或描述',
@@ -473,6 +474,17 @@ const messages = {
     kanban: {
       viewDetail: '查看详情',
       dragHere: '拖拽任务到此处',
+    },
+    calendar: {
+      prevMonth: '上月',
+      nextMonth: '下月',
+      today: '今天',
+      unscheduled: '未排期',
+      more: '还有 {n} 个',
+      collapse: '收起',
+      crossMonth: '{n} 个跨月/隐藏依赖',
+      legend: '依赖类型',
+      empty: '本月暂无任务',
     },
     dependency: {
       fs: '完成→开始',
