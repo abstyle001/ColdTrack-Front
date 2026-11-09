@@ -10,6 +10,7 @@ import { useTask } from '../logic/useTask';
 import { usePermission } from '../logic/usePermission';
 import { useUserStore } from '../store';
 import TaskKanban from '../components/TaskKanban.vue';
+import TaskCalendar from '../components/TaskCalendar.vue';
 import TaskDetailDrawer from '../components/TaskDetailDrawer.vue';
 import {
   fetchTaskListRequest,
@@ -331,6 +332,7 @@ async function submitForm() {
   formOpen.value = false;
   fetchCount();
   fetchList();
+  if (viewMode.value === 'calendar') fetchAllTasks();
 }
 
 // ===== 删除确认 =====
@@ -363,6 +365,7 @@ async function doDelete() {
   deleteOpen.value = false;
   fetchCount();
   fetchList();
+  if (viewMode.value === 'calendar') fetchAllTasks();
 }
 
 // ===== 状态 / 优先级标签 =====
@@ -414,7 +417,7 @@ const page = ref<number>(1);
 const UIcon = resolveComponent('UIcon');
 const UCheckbox = resolveComponent('UCheckbox');
 const UBadge = resolveComponent('UBadge');
-const viewMode = ref<'table' | 'kanban'>('table');
+const viewMode = ref<'table' | 'kanban' | 'calendar'>('table');
 const kanbanTasks = ref<Task[]>([]);
 const kanbanLoading = ref(false);
 
@@ -425,9 +428,19 @@ async function fetchAllTasks() {
   kanbanLoading.value = false;
 }
 
+// 日历视图：/task 仅支持项目过滤，状态/优先级/标签筛选在前端叠加
+const calendarTasks = computed(() =>
+  kanbanTasks.value.filter((task) => {
+    if (statusFilter.value && task.status !== statusFilter.value) return false;
+    if (priorityFilter.value && task.priority !== priorityFilter.value) return false;
+    if (tagFilter.value && !(task.tags ?? []).some((tag) => String(tag.id) === tagFilter.value)) return false;
+    return true;
+  }),
+);
+
 function onProjectFilterChange() {
   applyFilter();
-  if (viewMode.value === 'kanban') fetchAllTasks();
+  if (viewMode.value !== 'table') fetchAllTasks();
 }
 
 async function handleKanbanStatusChanged() {
@@ -649,6 +662,7 @@ const columns = computed<TableColumn<Task>[]>(() => [
           <div class="inline-flex rounded-md border border-default overflow-hidden ml-2">
             <button type="button" :class="viewMode === 'table' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'table'">{{ t('task.view.table') }}</button>
             <button type="button" :class="viewMode === 'kanban' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'kanban'; fetchAllTasks()">{{ t('task.view.kanban') }}</button>
+            <button type="button" :class="viewMode === 'calendar' ? 'bg-primary text-white' : ''" class="px-4 py-2 text-sm transition-colors" @click="viewMode = 'calendar'; fetchAllTasks()">{{ t('task.view.calendar') }}</button>
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
@@ -732,6 +746,11 @@ const columns = computed<TableColumn<Task>[]>(() => [
       <div v-if="viewMode === 'kanban'" class="flex-1">
         <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">{{ t('task.loading') }}</div>
         <TaskKanban v-else :tasks="kanbanTasks" :canUpdate="can('task.update')" :canDelete="can('task.delete')" :managedProjectIds="managedProjectIds" @edit="openEdit" @delete="confirmDelete" @detail="openDetail" @statusChanged="handleKanbanStatusChanged" />
+      </div>
+
+      <div v-if="viewMode === 'calendar'" class="flex-1">
+        <div v-if="kanbanLoading" class="flex items-center justify-center py-16 text-muted">{{ t('task.loading') }}</div>
+        <TaskCalendar v-else :tasks="calendarTasks" @detail="openDetail" />
       </div>
 
       <!-- 新建 / 编辑任务 -->

@@ -378,6 +378,7 @@ const messages: MessageSchema = {
     view: {
       table: 'Table',
       kanban: 'Kanban',
+      calendar: 'Calendar',
     },
     filter: {
       searchPlaceholder: 'Filter by title or description',
@@ -475,6 +476,17 @@ const messages: MessageSchema = {
     kanban: {
       viewDetail: 'View details',
       dragHere: 'Drag tasks here',
+    },
+    calendar: {
+      prevMonth: 'Previous month',
+      nextMonth: 'Next month',
+      today: 'Today',
+      unscheduled: 'Unscheduled',
+      more: '{n} more',
+      collapse: 'Collapse',
+      crossMonth: '{n} cross-month/hidden dependencies',
+      legend: 'Dependency types',
+      empty: 'No tasks this month',
     },
     dependency: {
       fs: 'Finish → Start',

@@ -16,6 +16,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/Sidebar.vue')['default']
+    TaskCalendar: typeof import('./src/components/TaskCalendar.vue')['default']
     TaskDetailDrawer: typeof import('./src/components/TaskDetailDrawer.vue')['default']
     TaskKanban: typeof import('./src/components/TaskKanban.vue')['default']
     UApp: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/App.vue')['default']
